@@ -1,0 +1,5 @@
+<type>(<scope>): <short summary>
+
+[why/what/how; trade-offs, migration notes]
+
+Refs: #issue
