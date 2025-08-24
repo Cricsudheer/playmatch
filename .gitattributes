@@ -1,2 +1,15 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
+* text=auto eol=lf
+
+*.sh  text eol=lf
+*.bat text eol=crlf
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jar binary
+*.zip binary
+
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
