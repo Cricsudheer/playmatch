@@ -9,6 +9,7 @@ import com.example.playmatch.auth.repository.PasswordResetTokenRepository;
 import com.example.playmatch.auth.repository.UserRepository;
 import com.example.playmatch.auth.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthService {
@@ -107,9 +109,12 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
             tokenRepository.invalidateUserTokens(user.getId(), OffsetDateTime.now());
 
             // Create new reset token
+            String rawToken = UUID.randomUUID().toString();
+            log.info("Generated password reset token for user {}: {}", email, rawToken);
+
             PasswordResetToken token = PasswordResetToken.builder()
                 .userId(user.getId())
-                .tokenHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .tokenHash(passwordEncoder.encode(rawToken))
                 .issuedAt(OffsetDateTime.now())
                 .expiresAt(OffsetDateTime.now().plusSeconds(passwordResetExpirationSeconds))
                 .build();
