@@ -23,6 +23,8 @@
         <logstash.encoder.version>7.4</logstash.encoder.version>
         <openapi-generator.version>7.0.1</openapi-generator.version>
         <jackson-nullable.version>0.2.6</jackson-nullable.version>
+        <jjwt.version>0.11.5</jjwt.version>
+        <argon2.version>2.11</argon2.version>
     </properties>
 
     <dependencies>
@@ -88,6 +90,43 @@
             <version>${jackson-nullable.version}</version>
         </dependency>
 
+        <!-- Security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- JWT -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Password Hashing (Argon2) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
+        <dependency>
+            <groupId>de.mkammerer</groupId>
+            <artifactId>argon2-jvm</artifactId>
+            <version>${argon2.version}</version>
+        </dependency>
+
         <!-- Test (kept minimal) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -105,6 +144,20 @@
                 <version>3.11.0</version>
                 <configuration>
                     <release>17</release>
+                </configuration>
+            </plugin>
+
+            <!-- Spring Boot Maven Plugin -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
