@@ -34,7 +34,7 @@ public class SecurityConfig {
                     "/v1/auth/login",
                     "/v1/auth/forgot-password",
                     "/v1/auth/reset-password",
-                    "/api/v1/health/poll",
+                    "/v1/health/poll",
                     "/v3/api-docs/**",
                     "/swagger-ui/**"
                 ).permitAll()

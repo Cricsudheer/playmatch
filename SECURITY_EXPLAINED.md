@@ -1,76 +1,63 @@
-# Security in Our PlayMatch Project 🎮 🔒
+.\mvnw.cmd spring-boot:run# PlayMatch Security Explained
 
-Hi there! Let's learn about how we keep our PlayMatch app safe and secure. Think of it like having different locks and safety measures for your treehouse! 
+## What is Security in PlayMatch?
 
-## 🔑 The Special Keys We Use (JWT Tokens)
-Imagine you're in a super-secret club. When you join (log in), we give you two special passes:
-1. A **Quick Pass** (Access Token) - This is like a day pass that lets you play for a few hours
-2. A **Long Pass** (Refresh Token) - This is like a membership card that helps you get new day passes
+Hi there! In this document, I'll explain how security works in the PlayMatch application in a way that's easy to understand.
 
-These passes are super special because:
-- Only our app can make them (using something called a "secret key")
-- They have your name written in them in a special way
-- They expire after some time (just like real passes!)
-- Bad guys can't copy them because they're like magical stamps
+### What Does "Security" Mean?
 
-## 🔐 Password Protection
-When you create a password:
-- We don't keep your actual password! (Just like how your parents don't keep your friend's secrets)
-- We turn it into a special code that even we can't turn back (like mixing colors - you can't un-mix them!)
-- We use something called "BCrypt" (think of it as our special password scrambler)
+Think of security like the locks on your house door. It keeps strangers out and only lets people with the right keys come in. In apps like PlayMatch, security helps make sure:
 
-## 🚫 Safety Guards
-We have many guards watching over the app:
-1. **CORS Guard** - Like a bouncer who checks if you're coming from a safe place
-2. **Login Guard** - Makes sure nobody can try too many wrong passwords (like having 5 chances to guess)
-3. **Time Guard** - Makes your passes expire after some time (so if a bad guy finds an old pass, it won't work)
-
-## 📧 Email Safety
-When you sign up:
-- We send you a special email to make sure it's really you
-- The verification link expires after a day (like magic ink that disappears!)
-- Your email is kept safe and secret
-
-## 🔒 Other Cool Security Stuff
-
-### Redis Safe Box 📦
-- We use something called "Redis" - think of it as a super-fast safe box
-- It keeps track of who is logged in and who isn't
-- If someone tries to use an old pass, Redis helps us catch them!
-
-### Database Protection 💾
-- All your information is kept in a special vault (database)
-- Only the app knows how to open this vault
-- Everything going in and out is encrypted (like having a secret language)
-
-### Special Headers 📝
-When the app talks to the server:
-- It uses special code words (headers)
-- Has a special way to say "Hello" (Bearer token)
-- Checks if the message was changed during delivery
-
-## 🛡️ What Makes Our App Extra Safe?
-
-1. **Multiple Checks**: Like having many guards at a castle
-2. **Secret Codes**: Everything important is written in secret code
-3. **Time Limits**: Bad stuff expires quickly
-4. **Safe Communication**: Like having a private tunnel for messages
-5. **Smart Guards**: Our app can tell if someone is trying to trick it
-
-## 🌟 Fun Facts About Our Security!
-
-- The passwords we store are scrambled more than 10 times!
-- Our tokens (passes) are signed with a special 256-bit key (that's like having 256 different locks at once!)
-- We check every single message to make sure it hasn't been tampered with
-- Your session (play time) is watched by both your device and our servers
-
-## 🎮 What This Means For Players
-
-When you use PlayMatch:
-1. Your account is super safe
-2. Your messages are private
+1. Only you can access your account
+2. Your personal information stays private
 3. Nobody can pretend to be you
-4. Your information is protected
-5. You can play without worrying about bad guys!
 
-Remember: Security is like having a super-strong fortress protecting your favorite game! 🏰
+## Security Features in PlayMatch
+
+### Password Protection
+
+When you create a password in PlayMatch:
+- Your password is never stored as-is
+- It gets turned into a secret code using something called "Argon2" (like a super-strong blender for passwords)
+- Even if someone looked at the database, they couldn't figure out your password
+
+### Login Tokens (JWT)
+
+When you log in:
+- The app gives you a special digital ticket (JWT token)
+- This ticket proves it's really you
+- The ticket has an expiration time (like a movie ticket that only works for one show)
+- You use this ticket to access protected parts of the app
+
+### Protection Against Common Threats
+
+PlayMatch protects against:
+
+1. **Password Guessing**: If someone tries to guess your password too many times, they get blocked
+2. **Data Snoopers**: Information sent between your device and the server is encrypted (scrambled)
+3. **Cross-Site Attacks**: Special protections stop other websites from tricking you into doing things in PlayMatch
+4. **Injection Attacks**: The app carefully checks all information it receives to make sure no one is trying to trick it
+
+## Important Security Terms
+
+- **JWT (JSON Web Token)**: A digital ticket that proves who you are
+- **Encryption**: Scrambling information so only the right people can read it
+- **Authentication**: Proving you are who you say you are (like showing ID)
+- **Authorization**: Checking if you're allowed to do something
+- **CORS**: Rules about which websites can talk to our app
+- **Password Hashing**: The way we turn your password into a secret code
+
+## How Your Data Stays Safe
+
+1. **In Transit**: When you send information to PlayMatch, it travels through a secure tunnel (HTTPS)
+2. **At Rest**: Information stored in our database is protected
+3. **Access Control**: Only the parts of the app that need your information can see it
+
+## Security Best Practices for Users
+
+1. Use a strong password that's hard to guess
+2. Don't share your login information with others
+3. Log out when using shared computers
+4. Be careful about clicking links in emails claiming to be from PlayMatch
+
+Remember: Security is like a team sport - we've built strong protections, but we need your help to keep everything safe!
