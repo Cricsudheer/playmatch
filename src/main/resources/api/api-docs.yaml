@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: PlayMatch API
+  description: API for PlayMatch service
+  version: 1.0.0
+  contact:
+    name: PlayMatch Team
+    url: https://playmatch.com
+    email: support@playmatch.com
+
+servers:
+  - url: http://localhost:8081
+    description: Local development server
+  - url: https://api.playmatch.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints for service monitoring
+  - name: Example
+    description: Example API endpoints - Replace with your actual endpoints
+
+paths:
+  /api/v1/health/poll:
+    get:
+      tags:
+        - Health
+      summary: Long polling health check
+      description: Endpoint for gateway to check if service is available for long polling
+      operationId: checkLongPollingHealth
+      responses:
+        '200':
+          description: Service is ready for long polling
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is not available for long polling
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/examples:
+    get:
+      tags:
+        - Example
+      summary: List examples
+      description: Get a list of examples
+      operationId: getExamples
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExampleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN]
+          example: "UP"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-09-27T12:00:00Z"
+        message:
+          type: string
+          example: "Service is ready for long polling"
+      required:
+        - status
+        - timestamp
+
+    ExampleResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Example Name"
+        description:
+          type: string
+          example: "Example Description"
+      required:
+        - id
+        - name
+
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+      required:
+        - status
+        - error
+        - message
+        - path
+
+  responses:
+    BadRequest:
+      description: Bad Request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized - Authentication is required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not Found - Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

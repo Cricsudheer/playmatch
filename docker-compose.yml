@@ -44,16 +44,13 @@ services:
       redis:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      # App -> Postgres/Redis via service names (same Docker network)
-      DB_URL: jdbc:postgresql://postgres:5432/playmatchdb
-      DB_USERNAME: playmatch
-      DB_PASSWORD: playmatch
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      # 32+ chars in real prod
-      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-123456-123456-123456}
-      JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseContainerSupport"
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/playmatchdb
+      SPRING_DATASOURCE_USERNAME: playmatch
+      SPRING_DATASOURCE_PASSWORD: playmatch
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SECURITY_JWT_SECRET: local-dev-secret-local-dev-secret-123456
     ports:
       - "8080:8080"
     restart: unless-stopped
