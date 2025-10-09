@@ -152,6 +152,7 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
         OffsetDateTime lockoutTime = newFailedCount >= 5 ?
             OffsetDateTime.now().plusMinutes(15) : null;
 
+        //TODO(BUG) : the failed login count is not updating after login failure
         userRepository.updateLoginFailure(user.getId(), lockoutTime);
 
         if (lockoutTime != null) {
