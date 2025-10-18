@@ -387,7 +387,7 @@ components:
         - createdAt
         - updatedAt
       properties:
-        id: { type: string, format: uuid }
+        id: { type: string, format: long }
         userId: { type: string, format: uuid }
         fullName: { type: string }
         gender: { $ref: '#/components/schemas/Gender' }
