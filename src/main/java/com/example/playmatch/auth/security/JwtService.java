@@ -1,5 +1,6 @@
 package com.example.playmatch.auth.security;
 
+import com.example.playmatch.auth.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -27,8 +29,14 @@ public class JwtService {
     @Value("${app.security.jwt.refresh-token.expiration}")
     private long refreshExpiration;
 
+    private static final String USER_ID_CLAIM = "uid";
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get(USER_ID_CLAIM, String.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -37,7 +45,11 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        Map<String, Object> extra = new HashMap<>();
+        if (userDetails instanceof User u) {
+            extra.put(USER_ID_CLAIM, u.getId().toString());
+        }
+        return generateToken(extra, userDetails);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
@@ -45,7 +57,11 @@ public class JwtService {
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(new HashMap<>(), userDetails, refreshExpiration);
+        Map<String, Object> extra = new HashMap<>();
+        if (userDetails instanceof User u) {
+            extra.put(USER_ID_CLAIM, u.getId().toString());
+        }
+        return buildToken(extra, userDetails, refreshExpiration);
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {

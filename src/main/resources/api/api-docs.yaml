@@ -21,6 +21,8 @@ tags:
     description: Example API endpoints - Replace with your actual endpoints
   - name: Auth
     description: Authentication and user management endpoints
+  - name: PlayerProfile
+    description: Core Player Profile management endpoints
 
 paths:
   /api/v1/health/poll:
@@ -167,8 +169,260 @@ paths:
         "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
+  # Player Profile paths
+  /api/players/profile:
+    post:
+      tags: [PlayerProfile]
+      operationId: createPlayerProfile
+      summary: Create player profile (core)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlayerProfileRequest'
+            examples:
+              sample:
+                summary: Example create request
+                value:
+                  fullName: "Rahul Mehta"
+                  gender: "MALE"
+                  mobile: "9876543210"
+                  city: "Bengaluru"
+                  primaryRole: "BATTER"
+                  jerseySize: "L"
+                  upiId: "rahulm@okicici"
+                  codeOfConductAccepted: true
+                  profilePhotoUrl: "https://cdn.playmatch/u/abc.jpg"
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerProfileResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+    put:
+      tags: [PlayerProfile]
+      operationId: updatePlayerProfile
+      summary: Update player profile (partial; only provided fields)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlayerProfileRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerProfileResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/players/profile/{userId}:
+    get:
+      tags: [PlayerProfile]
+      operationId: getPlayerProfileByUserId
+      summary: Get profile by userId (self read; captain read later)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerProfileResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/players/search:
+    get:
+      tags: [PlayerProfile]
+      operationId: searchPlayers
+      summary: Search player summaries by city and/or primaryRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: city
+          in: query
+          required: false
+          schema: { type: string, maxLength: 80 }
+        - name: primaryRole
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PrimaryRole'
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
 components:
   schemas:
+    Gender:
+      type: string
+      enum: [ MALE, FEMALE, OTHER ]
+
+    PrimaryRole:
+      type: string
+      enum: [ BATTER, BOWLER, ALL_ROUNDER, WICKET_KEEPER ]
+
+    JerseySize:
+      type: string
+      enum: [ S, M, L, XL, XXL ]
+
+    CreatePlayerProfileRequest:
+      type: object
+      required:
+        - fullName
+        - gender
+        - mobile
+        - city
+        - primaryRole
+        - codeOfConductAccepted
+      properties:
+        fullName:
+          type: string
+          maxLength: 80
+        gender:
+          $ref: '#/components/schemas/Gender'
+        mobile:
+          type: string
+          description: 10-15 digits, numeric only
+          pattern: '^[0-9]{10,15}$'
+        city:
+          type: string
+          maxLength: 80
+        primaryRole:
+          $ref: '#/components/schemas/PrimaryRole'
+        jerseySize:
+          $ref: '#/components/schemas/JerseySize'
+        upiId:
+          type: string
+          maxLength: 64
+          pattern: '^[A-Za-z0-9._-]{2,}@[A-Za-z]{2,}$'
+        codeOfConductAccepted:
+          type: boolean
+          description: Must be true
+        profilePhotoUrl:
+          type: string
+          format: uri
+          description: http/https only
+
+    UpdatePlayerProfileRequest:
+      type: object
+      description: Only provided fields are updated (partial update).
+      properties:
+        fullName:
+          type: string
+          maxLength: 80
+        gender:
+          $ref: '#/components/schemas/Gender'
+        mobile:
+          type: string
+          pattern: '^[0-9]{10,15}$'
+        city:
+          type: string
+          maxLength: 80
+        primaryRole:
+          $ref: '#/components/schemas/PrimaryRole'
+        jerseySize:
+          $ref: '#/components/schemas/JerseySize'
+        upiId:
+          type: string
+          maxLength: 64
+          pattern: '^[A-Za-z0-9._-]{2,}@[A-Za-z]{2,}$'
+        codeOfConductAccepted:
+          type: boolean
+        profilePhotoUrl:
+          type: string
+          format: uri
+
+    PlayerProfileResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - fullName
+        - gender
+        - mobile
+        - city
+        - primaryRole
+        - jerseySize
+        - upiId
+        - codeOfConductAccepted
+        - createdAt
+        - updatedAt
+      properties:
+        id: { type: string, format: long }
+        userId: { type: string, format: uuid }
+        fullName: { type: string }
+        gender: { $ref: '#/components/schemas/Gender' }
+        mobile: { type: string }
+        city: { type: string }
+        primaryRole: { $ref: '#/components/schemas/PrimaryRole' }
+        jerseySize: { $ref: '#/components/schemas/JerseySize' }
+        upiId: { type: string }
+        codeOfConductAccepted: { type: boolean }
+        profilePhotoUrl: { type: string, format: uri, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PlayerSummary:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        fullName: { type: string }
+        city: { type: string }
+        primaryRole: { $ref: '#/components/schemas/PrimaryRole' }
+        jerseySize: { $ref: '#/components/schemas/JerseySize' }
+        profilePhotoUrl: { type: string, format: uri, nullable: true }
+
+    SearchResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerSummary'
+
+
     HealthResponse:
       type: object
       properties:

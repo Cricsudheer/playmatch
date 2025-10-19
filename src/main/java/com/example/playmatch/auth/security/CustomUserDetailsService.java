@@ -4,7 +4,6 @@ import com.example.playmatch.auth.exception.AccountLockedException;
 import com.example.playmatch.auth.model.User;
 import com.example.playmatch.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -31,14 +29,12 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new AccountLockedException("Account is temporarily locked");
         }
 
-        return new org.springframework.security.core.userdetails.User(
+        return new UserPrincipal(
+            user.getId(),
             user.getEmail(),
             user.getPasswordHash(),
-            !user.isDeleted(), // enabled
-            true, // accountNonExpired
-            true, // credentialsNonExpired
-            user.getLockoutUntil() == null || user.getLockoutUntil().isBefore(OffsetDateTime.now()), // accountNonLocked
-            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            !user.isDeleted(),
+            user.getLockoutUntil() == null || user.getLockoutUntil().isBefore(OffsetDateTime.now())
         );
     }
 }
