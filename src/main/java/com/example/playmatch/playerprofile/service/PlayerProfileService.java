@@ -25,7 +25,7 @@ public class PlayerProfileService {
     private final PlayerProfileRepository playerProfileRepository;
     private final UserRepository userRepository;
 
-    public PlayerProfileResponse createPlayerProfile(UUID userId, CreatePlayerProfileRequest request) {
+    public PlayerProfileResponse createPlayerProfile(Long userId, CreatePlayerProfileRequest request) {
         log.info("Creating player profile for user: {}", userId);
 
         // Check if user exists
@@ -67,7 +67,7 @@ public class PlayerProfileService {
         return mapToResponse(savedProfile);
     }
 
-    public PlayerProfileResponse updatePlayerProfile(UUID userId, UpdatePlayerProfileRequest request) {
+    public PlayerProfileResponse updatePlayerProfile(Long userId, UpdatePlayerProfileRequest request) {
         log.info("Updating player profile for user: {}", userId);
 
         PlayerProfile playerProfile = playerProfileRepository.findByUser_Id(userId)
@@ -116,7 +116,7 @@ public class PlayerProfileService {
     }
 
     @Transactional(readOnly = true)
-    public PlayerProfileResponse getPlayerProfileByUserId(UUID userId) {
+    public PlayerProfileResponse getPlayerProfileByUserId(Long userId) {
         log.info("Fetching player profile for user: {}", userId);
 
         PlayerProfile playerProfile = playerProfileRepository.findByUser_Id(userId)
@@ -160,20 +160,6 @@ public class PlayerProfileService {
             .updatedAt(playerProfile.getUpdatedAt());
     }
 
-    /**
-     * Converts a Long ID to a deterministic UUID
-     * This ensures the same Long ID always produces the same UUID
-     */
-    private UUID convertLongToUUID(Long id) {
-        if (id == null) {
-            return null;
-        }
-        // Create a deterministic UUID from the Long ID
-        // Using a fixed namespace UUID to ensure consistency
-        String namespace = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"; // Fixed namespace UUID
-        String idString = "player_profile_" + id;
-        return UUID.nameUUIDFromBytes((namespace + idString).getBytes());
-    }
 
     private PlayerSummary mapToSummary(PlayerProfile playerProfile) {
         return new PlayerSummary()

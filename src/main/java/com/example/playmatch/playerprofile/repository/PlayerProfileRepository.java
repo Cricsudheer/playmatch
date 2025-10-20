@@ -10,14 +10,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 public interface PlayerProfileRepository extends JpaRepository<PlayerProfile, Long> {
 
-    Optional<PlayerProfile> findByUser_Id(UUID userId);
+    Optional<PlayerProfile> findByUser_Id(Long userId);
 
-    boolean existsByUser_Id(UUID userId);
+    boolean existsByUser_Id(Long userId);
 
     boolean existsByMobile(String mobile);
 

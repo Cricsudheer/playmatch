@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -40,7 +39,7 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
     @Transactional
     public AuthUser registerUser(RegisterRequest request) {
         // Check if email exists
-        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Email already registered: " + request.getEmail());
         }
 
@@ -48,7 +47,7 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
         User user = User.builder()
             .name(request.getName())
             .email(request.getEmail().toLowerCase())
-            .gender(Gender.valueOf(request.getGender().name()))  // Fixed: Convert enum properly
+            .gender(Gender.valueOf(request.getGender().name()))
             .passwordHash(passwordEncoder.encode(request.getPassword()))
             .passwordUpdatedAt(OffsetDateTime.now())
             .createdAt(OffsetDateTime.now())
@@ -73,43 +72,60 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
                 )
             );
 
-            User user = userRepository.findByEmailIgnoreCase(request.getEmail())
+            User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
             // Update last login time and reset failed attempts
-            userRepository.updateLoginSuccess(user.getId(), OffsetDateTime.now());
+            userRepository.updateLastLogin(user.getId(), OffsetDateTime.now());
 
-            // Generate tokens
-            String accessToken = jwtService.generateToken(user);
-            String refreshToken = jwtService.generateRefreshToken(user);
-
-            // Create response
-            return new LoginResponse()
-                .accessToken(accessToken)
-                .tokenType("Bearer")
-                .expiresIn(3600)
-                .refreshToken(refreshToken)
-                .user(mapToAuthUser(user));
+            return generateTokenResponse(user);
 
         } catch (BadCredentialsException e) {
-            User user = userRepository.findByEmailIgnoreCase(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+            User user = userRepository.findByEmail(request.getEmail())
+                .orElse(null);
 
-            // Increment failed attempts and possibly lock account
-            handleFailedLogin(user);
+            if (user != null) {
+                // Increment failed attempts and possibly lock account
+                handleFailedLogin(user);
+            }
             throw e;
         }
     }
 
     @Override
     @Transactional
+    public LoginResponse refreshAccessToken(String refreshToken) {
+        try {
+            // Extract username from refresh token
+            String username = jwtService.extractUsername(refreshToken);
+
+            // Find user
+            User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new InvalidTokenException("User not found"));
+
+            // Validate refresh token
+            if (!jwtService.isTokenValid(refreshToken, user)) {
+                throw new InvalidTokenException("Invalid refresh token");
+            }
+
+            // Generate new tokens
+            return generateTokenResponse(user);
+
+        } catch (Exception e) {
+            log.error("Error refreshing token: {}", e.getMessage());
+            throw new InvalidTokenException("Invalid refresh token");
+        }
+    }
+
+    @Override
+    @Transactional
     public void initiatePasswordReset(String email) {
-        userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
+        userRepository.findByEmail(email).ifPresent(user -> {
             // Invalidate any existing tokens
             tokenRepository.invalidateUserTokens(user.getId(), OffsetDateTime.now());
 
             // Create new reset token
-            String rawToken = UUID.randomUUID().toString();
+            String rawToken = java.util.UUID.randomUUID().toString();
             log.info("Generated password reset token for user {}: {}", email, rawToken);
 
             PasswordResetToken token = PasswordResetToken.builder()
@@ -130,7 +146,7 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
     @Transactional
     public void resetPassword(String token, String newPassword) {
         // Find and validate the token using the hash directly
-        PasswordResetToken resetToken = tokenRepository.findValidToken(token, OffsetDateTime.now())
+        PasswordResetToken resetToken = tokenRepository.findByTokenHashAndConsumedAtIsNull(token)
             .orElseThrow(() -> new InvalidTokenException("Invalid or expired reset token"));
 
         // Find the associated user
@@ -147,13 +163,26 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
         tokenRepository.save(resetToken);
     }
 
+    private LoginResponse generateTokenResponse(User user) {
+        // Generate tokens
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        // Create response
+        return new LoginResponse()
+            .accessToken(accessToken)
+            .tokenType("Bearer")
+            .expiresIn(3600)
+            .refreshToken(refreshToken)
+            .user(mapToAuthUser(user));
+    }
+
     private void handleFailedLogin(User user) {
         short newFailedCount = (short) (user.getFailedLoginCount() + 1);
         OffsetDateTime lockoutTime = newFailedCount >= 5 ?
             OffsetDateTime.now().plusMinutes(15) : null;
 
-        //TODO(BUG) : the failed login count is not updating after login failure
-        userRepository.updateLoginFailure(user.getId(), lockoutTime);
+        userRepository.updateFailedLoginCount(user.getId(), newFailedCount, lockoutTime);
 
         if (lockoutTime != null) {
             throw new AccountLockedException("Account temporarily locked due to too many failed attempts");
@@ -162,12 +191,12 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
 
     private AuthUser mapToAuthUser(User user) {
         return new AuthUser()
-            .id(UUID.fromString(user.getId().toString()))
+            .id(user.getId())
             .name(user.getName())
-            .gender(AuthUser.GenderEnum.valueOf(user.getGender().getValue().toUpperCase()))
+            .gender(AuthUser.GenderEnum.valueOf(user.getGender().name()))
             .email(user.getEmail())
-            .createdAt(OffsetDateTime.parse(user.getCreatedAt().toString()))
-            .updatedAt(OffsetDateTime.parse(user.getUpdatedAt().toString()))
+            .createdAt(user.getCreatedAt())
+            .updatedAt(user.getUpdatedAt())
             .lastLoginAt(user.getLastLoginAt() != null ? OffsetDateTime.parse(user.getLastLoginAt().toString()) : null);
     }
 }

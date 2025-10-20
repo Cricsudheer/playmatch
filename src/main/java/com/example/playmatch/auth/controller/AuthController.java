@@ -49,6 +49,14 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/refresh-token")
+    @AllowAnonymous
+    public ResponseEntity<LoginResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        log.info("Processing refresh token request");
+        LoginResponse response = authService.refreshAccessToken(request.getRefreshToken());
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/forgot-password")
     @AllowAnonymous
     @Override

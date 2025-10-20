@@ -9,40 +9,34 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    Optional<User> findByEmail(String email);
 
     Optional<User> findByEmailIgnoreCase(String email);
 
-    boolean existsByEmailIgnoreCase(String email);
+    boolean existsByEmail(String email);
 
-    @Query("SELECT u FROM User u WHERE u.email = LOWER(:email) AND u.isDeleted = false")
-    Optional<User> findActiveByEmail(@Param("email") String email);
-
+    /**
+     * Update user's failed login count atomically
+     */
     @Modifying
-    @Query("""
-        UPDATE User u 
-        SET u.lastLoginAt = :timestamp,
-            u.failedLoginCount = 0,
-            u.lockoutUntil = null
-        WHERE u.id = :userId
-        """)
-    void updateLoginSuccess(
-        @Param("userId") UUID userId,
-        @Param("timestamp") OffsetDateTime timestamp
+    @Query("UPDATE User u SET u.failedLoginCount = :count, u.lockoutUntil = :lockoutUntil, u.updatedAt = CURRENT_TIMESTAMP WHERE u.id = :userId")
+    void updateFailedLoginCount(
+        @Param("userId") Long userId,
+        @Param("count") Short count,
+        @Param("lockoutUntil") OffsetDateTime lockoutUntil
     );
 
+    /**
+     * Update user's last login timestamp
+     */
     @Modifying
-    @Query("""
-        UPDATE User u 
-        SET u.failedLoginCount = u.failedLoginCount + 1,
-            u.lockoutUntil = :lockoutUntil
-        WHERE u.id = :userId
-        """)
-    void updateLoginFailure(
-        @Param("userId") UUID userId,
-        @Param("lockoutUntil") OffsetDateTime lockoutUntil
+    @Query("UPDATE User u SET u.lastLoginAt = :lastLoginAt, u.failedLoginCount = 0, u.lockoutUntil = null, u.updatedAt = CURRENT_TIMESTAMP WHERE u.id = :userId")
+    void updateLastLogin(
+        @Param("userId") Long userId,
+        @Param("lastLoginAt") OffsetDateTime lastLoginAt
     );
 }
