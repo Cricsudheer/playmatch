@@ -2,8 +2,8 @@ package com.example.playmatch.team.service;
 
 import com.example.playmatch.api.model.*;
 import com.example.playmatch.auth.repository.UserRepository;
-import com.example.playmatch.team.exception.TeamNotFoundException;
-import com.example.playmatch.team.exception.TeamMemberNotFoundException;
+import com.example.playmatch.team.exception.TeamError;
+import com.example.playmatch.team.exception.TeamException;
 import com.example.playmatch.team.model.Team;
 import com.example.playmatch.team.model.TeamMember;
 import com.example.playmatch.team.model.enums.TeamRole;
@@ -58,14 +58,14 @@ public class TeamService {
     public TeamResponse getTeam(Long teamId) {
         log.info("Fetching team with id: {}", teamId);
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
-                .orElseThrow(() -> new TeamNotFoundException(teamId));
+                .orElseThrow(() -> new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId));
         return convertToTeamResponse(team);
     }
 
     public TeamResponse updateTeam(Long teamId, UpdateTeamRequest request) {
         log.info("Updating team with id: {}", teamId);
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
-                .orElseThrow(() -> new TeamNotFoundException(teamId));
+                .orElseThrow(() ->new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId));
 
             team.setName(request.getName());
 
@@ -88,7 +88,7 @@ public class TeamService {
     public void deleteTeam(Long teamId) {
         log.info("Deleting team with id: {}", teamId);
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
-                .orElseThrow(() -> new TeamNotFoundException(teamId));
+                .orElseThrow(() -> new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId));
 
         team.setIsActive(false);
         teamRepository.save(team);
@@ -117,7 +117,7 @@ public class TeamService {
         log.info("Adding members to team: {}", teamId);
 
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
-                .orElseThrow(() -> new TeamNotFoundException(teamId));
+                .orElseThrow(() -> new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId));
 
         List<Long> successIds = new ArrayList<>();
         List<BulkOperationResultFailedInner> failed = new ArrayList<>();
@@ -170,11 +170,11 @@ public class TeamService {
         log.info("Removing member {} from team: {}", userId, teamId);
 
         if (!teamRepository.existsById(teamId)) {
-            throw new TeamNotFoundException(teamId);
+            throw new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId);
         }
 
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
-                .orElseThrow(() -> new TeamMemberNotFoundException(teamId, userId));
+                .orElseThrow(() ->new TeamException(TeamError.MEMBER_NOT_FOUND, "Member not found in team"));
 
         teamMemberRepository.delete(member);
     }
@@ -183,7 +183,7 @@ public class TeamService {
         log.info("Changing role for member {} in team: {}", userId, teamId);
 
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
-                .orElseThrow(() -> new TeamMemberNotFoundException(teamId, userId));
+                .orElseThrow(() -> new TeamException(TeamError.MEMBER_NOT_FOUND, "Member not found in team"));
 
         TeamRole newRole = TeamRole.valueOf(request.getRole().name());
         member.setRole(newRole);
@@ -195,7 +195,7 @@ public class TeamService {
         log.info("Listing members for team: {}", teamId);
 
         if (!teamRepository.existsById(teamId)) {
-            throw new TeamNotFoundException(teamId);
+            throw new  TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId);
         }
 
         Pageable pageable = PageRequest.of(offset / limit, limit);
