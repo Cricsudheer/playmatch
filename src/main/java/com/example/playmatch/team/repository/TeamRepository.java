@@ -23,5 +23,4 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
                                    @Param("name") String name,
                                    Pageable pageable);
 
-    boolean existsByNameIgnoreCase(String name);
 }

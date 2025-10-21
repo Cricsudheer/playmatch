@@ -6,17 +6,13 @@ import com.example.playmatch.api.model.PlayerProfileResponse;
 import com.example.playmatch.api.model.PrimaryRole;
 import com.example.playmatch.api.model.SearchResponse;
 import com.example.playmatch.api.model.UpdatePlayerProfileRequest;
-import com.example.playmatch.auth.model.User;
 import com.example.playmatch.auth.security.RequireAuthentication;
-import com.example.playmatch.auth.security.UserPrincipal;
 import com.example.playmatch.auth.security.CurrentUser;
 import com.example.playmatch.playerprofile.service.PlayerProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 

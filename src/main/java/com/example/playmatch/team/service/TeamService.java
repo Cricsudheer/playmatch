@@ -33,10 +33,6 @@ public class TeamService {
     public TeamResponse createTeam(CreateTeamRequest request, Long createdByUserId) {
         log.info("Creating team with name: {}", request.getName());
 
-//        if (teamRepository.existsByNameIgnoreCase(request.getName())) {
-//            throw TeamAlreadyExistsException.forTeamName(request.getName());
-//        }
-
         Team team = Team.builder()
                 .name(request.getName())
                 .city(request.getCity())
@@ -71,12 +67,7 @@ public class TeamService {
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() -> new TeamNotFoundException(teamId));
 
-//        if (request.getName() != null && !request.getName().equals(team.getName())) {
-//            if (teamRepository.existsByNameIgnoreCase(request.getName())) {
-//                throw TeamAlreadyExistsException.forTeamName(request.getName());
-//            }
             team.setName(request.getName());
-//        }
 
         if (request.getCity() != null) {
             team.setCity(request.getCity());

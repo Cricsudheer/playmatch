@@ -19,5 +19,4 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     @Query("UPDATE PasswordResetToken t SET t.consumedAt = :now WHERE t.userId = :userId")
     void invalidateUserTokens(@Param("userId") Long userId, @Param("now") OffsetDateTime now);
 
-    Optional<PasswordResetToken> findFirstByUserIdOrderByIssuedAtDesc(Long userId);
 }

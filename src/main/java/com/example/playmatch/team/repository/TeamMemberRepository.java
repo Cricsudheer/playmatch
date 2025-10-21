@@ -23,11 +23,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
                                          @Param("role") TeamRole role,
                                          Pageable pageable);
 
-    List<TeamMember> findByTeamIdAndUserIdIn(Long teamId, List<Long> userIds);
-
-    void deleteByTeamIdAndUserId(Long teamId, Long userId);
-
     boolean existsByTeamIdAndUserId(Long teamId, Long userId);
 
-    long countByTeamId(Long teamId);
 }
