@@ -94,6 +94,7 @@ public class TeamService {
         teamRepository.save(team);
     }
 
+    //TODO : THIS METHOD IS BEHAVING STRANGE, THE REASON IS DB CALL IN REPOSITORY SOMETIMES WORKS OTHER TIMES NOT
     @Transactional(readOnly = true)
     public TeamSearchResponse searchTeams(String city, String name, Integer limit, Integer offset) {
         log.info("Searching teams with city: {}, name: {}", city, name);
