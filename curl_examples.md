@@ -57,38 +57,144 @@ curl -X POST http://localhost:8081/v1/auth/reset-password \
 4. Use the JWT token in the Authorization header for protected endpoints
 5. All passwords must meet security requirements (uppercase, lowercase, number, special char)
 
-## Expected Responses:
+## Sigma Module - Player Stats Endpoints
 
-### Successful Registration
+### Get Player Stats (Batting, Bowling, Dismissal)
+```bash
+curl -X GET http://localhost:8080/api/players/1/stats \
+  -H "Content-Type: application/json"
+```
+
+**Example Response (200 OK):**
 ```json
 {
-  "id": "uuid",
-  "email": "test@example.com",
-  "firstName": "John",
-  "lastName": "Doe",
-  "createdAt": "2025-09-27T14:00:00Z"
+  "playerId": 1,
+  "playerName": "Virat Kohli",
+  "battingStats": [
+    {
+      "id": 1,
+      "player": {
+        "id": 1,
+        "name": "Virat Kohli"
+      },
+      "innings": 120,
+      "averageScore": 54.50,
+      "runsScored": 6540,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    }
+  ],
+  "bowlingStats": [
+    {
+      "id": 1,
+      "player": {
+        "id": 1,
+        "name": "Virat Kohli"
+      },
+      "innings": 45,
+      "wicketsTaken": 12,
+      "economyRate": 5.25,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    }
+  ],
+  "dismissalStats": [
+    {
+      "id": 1,
+      "player": {
+        "id": 1,
+        "name": "Virat Kohli"
+      },
+      "innings": 120,
+      "dismissals": 18,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    }
+  ]
 }
 ```
 
-### Successful Login
+**Error Response (404 Not Found):**
+```json
+{}
+```
+
+### Get Player Information
+```bash
+curl -X GET http://localhost:8080/api/players/1 \
+  -H "Content-Type: application/json"
+```
+
+**Example Response (200 OK):**
 ```json
 {
-  "accessToken": "eyJhbGci...",
-  "refreshToken": "eyJhbGci...",
-  "tokenType": "Bearer"
+  "id": 1,
+  "name": "Virat Kohli",
+  "createdAt": "2025-01-01T10:00:00Z",
+  "updatedAt": "2025-01-06T14:30:00Z"
 }
 ```
 
-### Successful Password Reset Request
+**Error Response (404 Not Found):**
 ```json
-{
-  "message": "If an account exists, instructions were sent."
-}
+{}
 ```
 
-### Successful Password Reset
-```json
-{
-  "message": "Password updated successfully."
-}
+## Sigma Endpoints Testing Script
+
+You can use this bash script to test all sigma endpoints:
+
+```bash
+#!/bin/bash
+
+BASE_URL="http://localhost:8080/api/players"
+PLAYER_ID=1
+
+echo "========== Testing Sigma Endpoints =========="
+
+echo -e "\n1. Get Player Information"
+curl -X GET "$BASE_URL/$PLAYER_ID" \
+  -H "Content-Type: application/json" \
+  -w "\nHTTP Status: %{http_code}\n"
+
+echo -e "\n2. Get Player Stats (Batting, Bowling, Dismissal)"
+curl -X GET "$BASE_URL/$PLAYER_ID/stats" \
+  -H "Content-Type: application/json" \
+  -w "\nHTTP Status: %{http_code}\n"
+
+echo -e "\n3. Get Non-existent Player (Should return 404)"
+curl -X GET "$BASE_URL/99999" \
+  -H "Content-Type: application/json" \
+  -w "\nHTTP Status: %{http_code}\n"
+
+echo -e "\n========== Test Complete =========="
+```
+
+## Sigma Endpoints Summary
+
+| Method | Endpoint | Description | Status Codes |
+|--------|----------|-------------|--------------|
+| GET | `/api/players/{playerId}` | Get player information | 200, 404, 500 |
+| GET | `/api/players/{playerId}/stats` | Get all player stats (batting, bowling, dismissal) | 200, 404, 500 |
+
+## Quick Reference - Common cURL Flags
+
+```bash
+# Pretty print JSON response
+curl -X GET http://localhost:8080/api/players/1 | jq .
+
+# Show response headers
+curl -i http://localhost:8080/api/players/1
+
+# Follow redirects
+curl -L http://localhost:8080/api/players/1
+
+# Set custom timeout (seconds)
+curl --max-time 10 http://localhost:8080/api/players/1
+
+# Save response to file
+curl http://localhost:8080/api/players/1 > response.json
+
+# Show verbose output
+curl -v http://localhost:8080/api/players/1
 ```
