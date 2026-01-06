@@ -22,5 +22,7 @@ public interface BattingStatsRepository extends JpaRepository<BattingStats, Long
 
     @Query("SELECT b FROM BattingStats b WHERE b.player.id = :playerId ORDER BY b.innings DESC")
     List<BattingStats> findByPlayerIdOrderByInningsDesc(@Param("playerId") Long playerId);
-}
 
+    @Query("SELECT b FROM BattingStats b INNER JOIN FETCH b.player p ORDER BY p.id, b.innings DESC")
+    List<BattingStats> findAllWithPlayerOptimized();
+}

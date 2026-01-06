@@ -62,4 +62,52 @@ public class PlayerStatsService {
                 .name(player.getName())
                 .build();
     }
+
+    /**
+     * Get stats for all players with optimized inner joins
+     * Fetches batting, bowling, and dismissal stats for all players in a single optimized query
+     */
+    public List<AllPlayersStatsDto> getAllPlayersStats() {
+        log.info("Fetching stats for all players with optimized inner joins");
+
+        List<BattingStats> battingStatsList = battingStatsRepository.findAllWithPlayerOptimized();
+        List<BowlingStats> bowlingStatsList = bowlingStatsRepository.findAllWithPlayerOptimized();
+        List<DismissalStats> dismissalStatsList = dismissalStatsRepository.findAllWithPlayerOptimized();
+
+        // Create a map for quick lookup by player ID
+        java.util.Map<Long, AllPlayersStatsDto> statsMap = new java.util.LinkedHashMap<>();
+
+        // Add batting stats
+        for (BattingStats bs : battingStatsList) {
+            Long playerId = bs.getPlayer().getId();
+            statsMap.computeIfAbsent(playerId, pid -> AllPlayersStatsDto.builder()
+                    .playerId(pid)
+                    .playerName(bs.getPlayer().getName())
+                    .build())
+                    .setBattingStats(bs);
+        }
+
+        // Add bowling stats
+        for (BowlingStats bs : bowlingStatsList) {
+            Long playerId = bs.getPlayer().getId();
+            statsMap.computeIfAbsent(playerId, pid -> AllPlayersStatsDto.builder()
+                    .playerId(pid)
+                    .playerName(bs.getPlayer().getName())
+                    .build())
+                    .setBowlingStats(bs);
+        }
+
+        // Add dismissal stats
+        for (DismissalStats ds : dismissalStatsList) {
+            Long playerId = ds.getPlayer().getId();
+            statsMap.computeIfAbsent(playerId, pid -> AllPlayersStatsDto.builder()
+                    .playerId(pid)
+                    .playerName(ds.getPlayer().getName())
+                    .build())
+                    .setDismissalStats(ds);
+        }
+
+        log.info("Successfully fetched stats for {} players", statsMap.size());
+        return new java.util.ArrayList<>(statsMap.values());
+    }
 }

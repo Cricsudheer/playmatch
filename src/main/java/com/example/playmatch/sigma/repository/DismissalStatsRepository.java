@@ -22,4 +22,7 @@ public interface DismissalStatsRepository extends JpaRepository<DismissalStats, 
 
     @Query("SELECT d FROM DismissalStats d WHERE d.player.id = :playerId ORDER BY d.innings DESC")
     List<DismissalStats> findByPlayerIdOrderByInningsDesc(@Param("playerId") Long playerId);
+
+    @Query("SELECT d FROM DismissalStats d INNER JOIN FETCH d.player p ORDER BY p.id, d.innings DESC")
+    List<DismissalStats> findAllWithPlayerOptimized();
 }

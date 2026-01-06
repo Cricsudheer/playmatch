@@ -140,6 +140,91 @@ curl -X GET http://localhost:8080/api/players/1 \
 {}
 ```
 
+### Get All Players Stats (Optimized with Inner Joins)
+```bash
+curl -X GET http://localhost:8080/sigma/api/players/all/stats \
+  -H "Content-Type: application/json"
+```
+
+**Example Response (200 OK):**
+```json
+[
+  {
+    "playerId": 1,
+    "playerName": "Virat Kohli",
+    "battingStats": {
+      "id": 1,
+      "player": {
+        "id": 1,
+        "name": "Virat Kohli"
+      },
+      "innings": 120,
+      "averageScore": 54.50,
+      "runsScored": 6540,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    },
+    "bowlingStats": {
+      "id": 1,
+      "player": {
+        "id": 1,
+        "name": "Virat Kohli"
+      },
+      "innings": 45,
+      "wicketsTaken": 12,
+      "economyRate": 5.25,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    },
+    "dismissalStats": {
+      "id": 1,
+      "player": {
+        "id": 1,
+        "name": "Virat Kohli"
+      },
+      "innings": 120,
+      "dismissals": 18,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    }
+  },
+  {
+    "playerId": 2,
+    "playerName": "Rohit Sharma",
+    "battingStats": {
+      "id": 2,
+      "player": {
+        "id": 2,
+        "name": "Rohit Sharma"
+      },
+      "innings": 115,
+      "averageScore": 52.30,
+      "runsScored": 6015,
+      "createdAt": "2025-01-02T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    },
+    "bowlingStats": null,
+    "dismissalStats": {
+      "id": 2,
+      "player": {
+        "id": 2,
+        "name": "Rohit Sharma"
+      },
+      "innings": 115,
+      "dismissals": 22,
+      "createdAt": "2025-01-02T10:00:00Z",
+      "updatedAt": "2025-01-06T14:30:00Z"
+    }
+  }
+]
+```
+
+**Performance Benefits:**
+- Uses `INNER JOIN FETCH` to eagerly load player data with their stats
+- Reduces N+1 query problems
+- Includes player names in response without additional queries
+- Optimized for bulk data retrieval
+
 ## Sigma Endpoints Testing Script
 
 You can use this bash script to test all sigma endpoints:
