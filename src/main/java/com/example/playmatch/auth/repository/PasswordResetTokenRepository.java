@@ -9,17 +9,14 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
-public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
 
-    @Query("SELECT t FROM PasswordResetToken t WHERE t.tokenHash = :hash AND t.consumedAt IS NULL AND t.expiresAt > :now")
-    Optional<PasswordResetToken> findValidToken(@Param("hash") String hash, @Param("now") OffsetDateTime now);
+    Optional<PasswordResetToken> findByTokenHashAndConsumedAtIsNull(String tokenHash);
 
     @Modifying
-    @Query("UPDATE PasswordResetToken t SET t.consumedAt = :now WHERE t.userId = :userId AND t.consumedAt IS NULL")
-    void invalidateUserTokens(@Param("userId") UUID userId, @Param("now") OffsetDateTime now);
+    @Query("UPDATE PasswordResetToken t SET t.consumedAt = :now WHERE t.userId = :userId")
+    void invalidateUserTokens(@Param("userId") Long userId, @Param("now") OffsetDateTime now);
 
-    Optional<PasswordResetToken> findFirstByUserIdOrderByIssuedAtDesc(UUID userId);
 }

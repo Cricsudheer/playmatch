@@ -48,6 +48,7 @@ public class AuthController implements AuthApi {
         LoginResponse response = authService.authenticateUser(request);
         return ResponseEntity.ok(response);
     }
+    
 
     @PostMapping("/forgot-password")
     @AllowAnonymous

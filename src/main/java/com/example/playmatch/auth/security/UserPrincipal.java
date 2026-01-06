@@ -6,7 +6,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 
 /**
  * Lightweight immutable principal used across services.
@@ -14,13 +13,13 @@ import java.util.UUID;
  */
 public class UserPrincipal implements UserDetails {
 
-    private final UUID id;
+    private final Long id;
     private final String email;
     private final String passwordHash;
     private final boolean enabled;
     private final boolean accountNonLocked;
 
-    public UserPrincipal(UUID id,
+    public UserPrincipal(Long id,
                          String email,
                          String passwordHash,
                          boolean enabled,
@@ -32,7 +31,13 @@ public class UserPrincipal implements UserDetails {
         this.accountNonLocked = accountNonLocked;
     }
 
-    public UUID getId() { return id; }
+    public Long getUserId() {
+        return id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -57,4 +62,3 @@ public class UserPrincipal implements UserDetails {
     @Override
     public boolean isEnabled() { return enabled; }
 }
-

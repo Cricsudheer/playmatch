@@ -24,6 +24,14 @@ public interface AuthService {
     LoginResponse authenticateUser(LoginRequest request);
 
     /**
+     * Refresh access token using refresh token
+     * @param refreshToken Valid refresh token
+     * @return New authentication response with fresh tokens
+     * @throws InvalidTokenException if refresh token is invalid or expired
+     */
+    LoginResponse refreshAccessToken(String refreshToken);
+
+    /**
      * Initiate password reset process
      * @param email User's email address
      */

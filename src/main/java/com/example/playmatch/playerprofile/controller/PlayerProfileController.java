@@ -6,18 +6,13 @@ import com.example.playmatch.api.model.PlayerProfileResponse;
 import com.example.playmatch.api.model.PrimaryRole;
 import com.example.playmatch.api.model.SearchResponse;
 import com.example.playmatch.api.model.UpdatePlayerProfileRequest;
-import com.example.playmatch.auth.model.User;
 import com.example.playmatch.auth.security.RequireAuthentication;
-import com.example.playmatch.auth.security.UserPrincipal;
 import com.example.playmatch.auth.security.CurrentUser;
 import com.example.playmatch.playerprofile.service.PlayerProfileService;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,7 +27,7 @@ public class PlayerProfileController implements PlayerProfileApi {
   @RequireAuthentication
   @Override
   public ResponseEntity<PlayerProfileResponse> _createPlayerProfile(CreatePlayerProfileRequest createPlayerProfileRequest) {
-    UUID userId = CurrentUser.getUserId();
+    Long userId = CurrentUser.getUserId();
     if (userId == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
@@ -49,8 +44,8 @@ public class PlayerProfileController implements PlayerProfileApi {
 
   @RequireAuthentication
   @Override
-  public ResponseEntity<PlayerProfileResponse> _getPlayerProfileByUserId(UUID userId) {
-    UUID currentUserId = CurrentUser.getUserId();
+  public ResponseEntity<PlayerProfileResponse> _getPlayerProfileByUserId(Long userId) {
+    Long currentUserId = CurrentUser.getUserId();
     if (currentUserId == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
@@ -80,28 +75,17 @@ public class PlayerProfileController implements PlayerProfileApi {
   @RequireAuthentication
   @Override
   public ResponseEntity<PlayerProfileResponse> _updatePlayerProfile(UpdatePlayerProfileRequest updatePlayerProfileRequest) {
-    UUID userId = CurrentUser.getUserId();
+    Long userId = CurrentUser.getUserId();
     if (userId == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     try {
       PlayerProfileResponse response = playerProfileService.updatePlayerProfile(userId, updatePlayerProfileRequest);
       return ResponseEntity.ok(response);
-    } catch (IllegalArgumentException notFoundOrBad) {
-      if (notFoundOrBad.getMessage() != null && notFoundOrBad.getMessage().toLowerCase().contains("not found")) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-      }
+    } catch (IllegalArgumentException badRequest) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     } catch (IllegalStateException conflict) {
       return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
-  }
-
-  private UUID resolveUserId(Authentication authentication) { // legacy method kept if other code references it
-    Object principal = authentication.getPrincipal();
-    if (principal instanceof UserPrincipal up) {
-      return up.getId();
-    }
-    return null;
   }
 }

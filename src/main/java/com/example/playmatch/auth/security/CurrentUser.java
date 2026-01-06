@@ -1,6 +1,5 @@
 package com.example.playmatch.auth.security;
 
-import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -27,22 +26,18 @@ public final class CurrentUser {
     }
 
     /**
-     * Returns the authenticated user's UUID or null if missing.
+     * Returns the authenticated user's ID or null if missing.
      */
-    public static UUID getUserId() {
-        UserPrincipal up = getPrincipal();
-        return up != null ? up.getId() : null;
+    public static Long getUserId() {
+        UserPrincipal principal = getPrincipal();
+        return principal != null ? principal.getUserId() : null;
     }
 
     /**
-     * Returns userId or throws IllegalStateException if absent.
+     * Returns the authenticated user's email or null if missing.
      */
-    public static UUID requireUserId() {
-        UUID id = getUserId();
-        if (id == null) {
-            throw new IllegalStateException("No authenticated user in security context");
-        }
-        return id;
+    public static String getEmail() {
+        UserPrincipal principal = getPrincipal();
+        return principal != null ? principal.getEmail() : null;
     }
 }
-
