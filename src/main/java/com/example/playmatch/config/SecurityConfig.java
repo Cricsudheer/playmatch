@@ -35,9 +35,11 @@ public class SecurityConfig {
                     "/v1/auth/forgot-password",
                     "/v1/auth/reset-password",
                     "/v1/health/poll",
+                    "/api/health/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
-                        "/sigma/**"
+                    "/actuator/**",
+                    "/sigma/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
