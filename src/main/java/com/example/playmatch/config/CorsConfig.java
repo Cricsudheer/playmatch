@@ -31,7 +31,10 @@ public class CorsConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "https://playmatch-ixe0.onrender.com"// actual frontend domain
+        ));
         config.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
         config.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));
         config.setExposedHeaders(Arrays.asList(exposedHeaders.split(",")));
