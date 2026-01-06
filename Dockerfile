@@ -2,7 +2,7 @@
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /workspace
 COPY . .
-RUN ./mvnw -q -DskipTests clean package
+RUN chmod +x mvnw && ./mvnw -q -DskipTests clean package
 
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
