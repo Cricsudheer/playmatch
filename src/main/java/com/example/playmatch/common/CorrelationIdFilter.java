@@ -1,4 +1,4 @@
-package com.example.playmatch.logging;
+package com.example.playmatch.common;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
