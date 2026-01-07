@@ -171,6 +171,46 @@ paths:
         "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
+  /v1/auth/refresh-token:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      description: |
+        Generates new access and refresh tokens using a valid refresh token.
+        The refresh token can be provided either in the request body or via httpOnly cookie.
+        Cookie-based approach is preferred for better security against XSS attacks.
+      operationId: refreshToken
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  description: JWT refresh token (optional if using cookie)
+                  example: "eyJhbGciOiJIUzI1NiJ9..."
+      responses:
+        "200":
+          description: Token refreshed successfully
+          headers:
+            X-Request-Id: { schema: { type: string } }
+            Set-Cookie:
+              description: httpOnly cookie with new refresh token (if cookie support enabled)
+              schema:
+                type: string
+                example: "refreshToken=eyJhbGciOiJIUzI1NiJ9...; HttpOnly; Secure; Path=/v1/auth; Max-Age=604800; SameSite=Strict"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
   # Player Profile paths
   /api/players/profile:
     post:

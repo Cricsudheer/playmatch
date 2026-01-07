@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a8f9b82d-1a34-4f76-8c0e-2e53a5b7c620",
     "name": "PlayMatch API",
-    "description": "Collection for PlayMatch API endpoints (updated 2025-10-20, added refresh token)",
+    "description": "Collection for PlayMatch API endpoints (updated 2026-01-07, enhanced refresh token with cookie support)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -52,7 +52,13 @@
                   "if (json.accessToken) pm.environment.set('access_token', json.accessToken);",
                   "if (json.refreshToken) pm.environment.set('refresh_token', json.refreshToken);",
                   "if (json.user && json.user.id) pm.environment.set('user_id', json.user.id);",
-                  "const rid = pm.response.headers.get('X-Request-Id'); if (rid) pm.environment.set('last_request_id', rid);"
+                  "const rid = pm.response.headers.get('X-Request-Id'); if (rid) pm.environment.set('last_request_id', rid);",
+                  "",
+                  "// Extract refresh token cookie if present (for cookie-based auth)",
+                  "const setCookieHeader = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookieHeader && setCookieHeader.includes('refreshToken=')) {",
+                  "  console.log('Refresh token cookie received from server');",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -72,12 +78,12 @@
               "host": ["{{base_url}}"],
               "path": ["v1","auth","login"]
             },
-            "description": "Login with email and password"
+            "description": "Login with email and password. Returns access token and refresh token in body. Also sets httpOnly cookie with refresh token if cookie support is enabled."
           },
           "response": []
         },
         {
-          "name": "Refresh Token",
+          "name": "Refresh Token (Body)",
           "event": [
             {
               "listen": "test",
@@ -87,7 +93,13 @@
                   "if (json.accessToken) pm.environment.set('access_token', json.accessToken);",
                   "if (json.refreshToken) pm.environment.set('refresh_token', json.refreshToken);",
                   "if (json.user && json.user.id) pm.environment.set('user_id', json.user.id);",
-                  "const rid = pm.response.headers.get('X-Request-Id'); if (rid) pm.environment.set('last_request_id', rid);"
+                  "const rid = pm.response.headers.get('X-Request-Id'); if (rid) pm.environment.set('last_request_id', rid);",
+                  "",
+                  "// Log if new cookie is set",
+                  "const setCookieHeader = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookieHeader && setCookieHeader.includes('refreshToken=')) {",
+                  "  console.log('New refresh token cookie set by server');",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -107,7 +119,56 @@
               "host": ["{{base_url}}"],
               "path": ["v1","auth","refresh-token"]
             },
-            "description": "Refresh access token using refresh token"
+            "description": "Refresh access token using refresh token from request body (recommended for mobile apps). The refresh token is sent in JSON body and new tokens are returned. Token rotation is applied - both access and refresh tokens are regenerated."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token (Cookie)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json={}; try { json = pm.response.json(); } catch(e) {}",
+                  "if (json.accessToken) pm.environment.set('access_token', json.accessToken);",
+                  "if (json.refreshToken) pm.environment.set('refresh_token', json.refreshToken);",
+                  "if (json.user && json.user.id) pm.environment.set('user_id', json.user.id);",
+                  "const rid = pm.response.headers.get('X-Request-Id'); if (rid) pm.environment.set('last_request_id', rid);",
+                  "",
+                  "// Verify cookie was sent and received",
+                  "const setCookieHeader = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookieHeader && setCookieHeader.includes('refreshToken=')) {",
+                  "  console.log('New refresh token cookie received');",
+                  "  pm.test('Refresh token cookie is httpOnly', function() {",
+                  "    pm.expect(setCookieHeader).to.include('HttpOnly');",
+                  "  });",
+                  "  pm.test('Refresh token cookie has SameSite', function() {",
+                  "    pm.expect(setCookieHeader).to.include('SameSite');",
+                  "  });",
+                  "} else {",
+                  "  console.log('No refresh token cookie in response - make sure cookie support is enabled');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/refresh-token",
+              "host": ["{{base_url}}"],
+              "path": ["v1","auth","refresh-token"]
+            },
+            "description": "Refresh access token using httpOnly cookie (recommended for web apps). No refresh token in body - it's automatically sent via cookie. This is more secure against XSS attacks. NOTE: In Postman, you need to enable 'Automatically follow redirects' and cookies in Settings > General for this to work properly. The cookie must be set from a previous login request."
           },
           "response": []
         },
