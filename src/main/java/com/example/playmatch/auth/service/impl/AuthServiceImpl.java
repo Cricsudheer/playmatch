@@ -8,6 +8,7 @@ import com.example.playmatch.auth.model.User;
 import com.example.playmatch.auth.repository.PasswordResetTokenRepository;
 import com.example.playmatch.auth.repository.UserRepository;
 import com.example.playmatch.auth.security.JwtService;
+import com.example.playmatch.auth.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,7 +105,7 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
                 .orElseThrow(() -> new InvalidTokenException("User not found"));
 
             // Validate refresh token
-            if (!jwtService.isTokenValid(refreshToken, user)) {
+            if (!jwtService.isTokenValid(refreshToken)) {
                 throw new InvalidTokenException("Invalid refresh token");
             }
 
@@ -164,9 +165,18 @@ public class AuthServiceImpl implements com.example.playmatch.auth.service.AuthS
     }
 
     private LoginResponse generateTokenResponse(User user) {
-        // Generate tokens
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
+        // Convert User to UserPrincipal
+        UserPrincipal userPrincipal = new UserPrincipal(
+            user.getId(),
+            user.getEmail(),
+            user.getPasswordHash(),
+            !user.isDeleted(),
+            user.isAccountNonLocked()
+        );
+
+        // Generate tokens from UserPrincipal
+        String accessToken = jwtService.generateToken(userPrincipal);
+        String refreshToken = jwtService.generateRefreshToken(userPrincipal);
 
         // Create response
         return new LoginResponse()
