@@ -9,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -30,7 +28,6 @@ import io.jsonwebtoken.security.SignatureException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
 
     // Public endpoints that should skip JWT processing entirely
     private static final List<String> PUBLIC_PATHS = Arrays.asList(
@@ -71,36 +68,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String jwt = authHeader.substring(7);
-        String userEmail = null;
 
-        try {
-            userEmail = jwtService.extractUsername(jwt);
-            log.debug("Extracted username from JWT: {}", userEmail);
-        } catch (ExpiredJwtException e) {
-            log.debug("Expired JWT encountered; proceeding unauthenticated: {}", e.getMessage());
-        } catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
-            log.debug("Invalid JWT encountered; proceeding unauthenticated: {}", e.getMessage());
-        } catch (Exception e) {
-            log.debug("Unexpected JWT error; proceeding unauthenticated: {}", e.getMessage());
-        }
-
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-                if (jwtService.isTokenValid(jwt, userDetails)) {
+                // Extract UserPrincipal directly from JWT claims - no database hit!
+                UserPrincipal userPrincipal = jwtService.extractUserPrincipal(jwt);
+
+                // Validate token expiration
+                if (jwtService.isTokenValid(jwt)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
+                        userPrincipal,
                         null,
-                        userDetails.getAuthorities()
+                        userPrincipal.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Successfully authenticated user: {}", userEmail);
+                    log.debug("Successfully authenticated user from JWT: {}", userPrincipal.getEmail());
                 }
             } catch (ExpiredJwtException e) {
-                log.debug("Expired JWT during validation; ignoring auth set.");
+                log.debug("Expired JWT encountered; proceeding unauthenticated: {}", e.getMessage());
+            } catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+                log.debug("Invalid JWT encountered; proceeding unauthenticated: {}", e.getMessage());
             } catch (Exception e) {
-                log.debug("Error during JWT validation; ignoring auth set: {}", e.getMessage());
+                log.debug("Unexpected JWT error; proceeding unauthenticated: {}", e.getMessage());
             }
         }
 
