@@ -3,7 +3,9 @@ package com.example.playmatch.auth.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,18 @@ public class JwtService {
     private static final String USER_ID_CLAIM = "uid";
     private static final String ENABLED_CLAIM = "enabled";
     private static final String ACCOUNT_NON_LOCKED_CLAIM = "accountNonLocked";
+
+//    TODO : REMOVE WHEN FIXED
+    @PostConstruct
+    void validateJwtSecret() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("JWT secret is missing: app.security.jwt.secret-key");
+        }
+        int bytes = Decoders.BASE64.decode(secretKey).length;
+        if (bytes < 32) {
+            throw new IllegalStateException("JWT secret too short after Base64 decode. bytes=" + bytes);
+        }
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -131,7 +145,8 @@ public class JwtService {
     }
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
 }
