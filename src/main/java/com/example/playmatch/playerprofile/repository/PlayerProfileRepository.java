@@ -20,6 +20,8 @@ public interface PlayerProfileRepository extends JpaRepository<PlayerProfile, Lo
 
     boolean existsByMobile(String mobile);
 
+    Optional<PlayerProfile> findByMobile(String mobile);
+
     @Query("SELECT p FROM PlayerProfile p WHERE " +
            "(:city IS NULL OR LOWER(p.city) = LOWER(:city)) AND " +
            "(:primaryRole IS NULL OR p.primaryRole = :primaryRole)")

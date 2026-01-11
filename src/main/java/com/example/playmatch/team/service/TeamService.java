@@ -2,6 +2,7 @@ package com.example.playmatch.team.service;
 
 import com.example.playmatch.api.model.*;
 import com.example.playmatch.auth.repository.UserRepository;
+import com.example.playmatch.playerprofile.repository.PlayerProfileRepository;
 import com.example.playmatch.team.exception.TeamError;
 import com.example.playmatch.team.exception.TeamException;
 import com.example.playmatch.team.model.Team;
@@ -29,6 +30,7 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final PlayerProfileRepository playerProfileRepository;
 
     public TeamResponse createTeam(CreateTeamRequest request, Long createdByUserId) {
         log.info("Creating team with name: {}", request.getName());
@@ -44,9 +46,12 @@ public class TeamService {
         Team savedTeam = teamRepository.save(team);
 
         // Add creator as admin
+        var creatorUser = userRepository.findById(createdByUserId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + createdByUserId));
+
         TeamMember creatorMember = TeamMember.builder()
                 .team(savedTeam)
-                .userId(createdByUserId)
+                .user(creatorUser)
                 .role(TeamRole.ADMIN)
                 .build();
         teamMemberRepository.save(creatorMember);
@@ -67,7 +72,9 @@ public class TeamService {
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() ->new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId));
 
+        if (request.getName() != null) {
             team.setName(request.getName());
+        }
 
         if (request.getCity() != null) {
             team.setCity(request.getCity());
@@ -90,14 +97,25 @@ public class TeamService {
         Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
                 .orElseThrow(() -> new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId));
 
+        // Delete all team members before soft-deleting the team
+        teamMemberRepository.deleteByTeamId(teamId);
+        log.info("Deleted all team members for team {}", teamId);
+
         team.setIsActive(false);
         teamRepository.save(team);
     }
 
-    //TODO : THIS METHOD IS BEHAVING STRANGE, THE REASON IS DB CALL IN REPOSITORY SOMETIMES WORKS OTHER TIMES NOT
     @Transactional(readOnly = true)
     public TeamSearchResponse searchTeams(String city, String name, Integer limit, Integer offset) {
         log.info("Searching teams with city: {}, name: {}", city, name);
+
+        // Validate pagination parameters to prevent division by zero
+        if (limit == null || limit <= 0) {
+            limit = 20; // Default limit
+        }
+        if (offset == null || offset < 0) {
+            offset = 0; // Default offset
+        }
 
         Pageable pageable = PageRequest.of(offset / limit, limit);
         Page<Team> teamsPage = teamRepository.findTeamsByCriteria(city, name, pageable);
@@ -125,8 +143,9 @@ public class TeamService {
 
         for (Long userId : request.getPlayerIds()) {
             try {
-                // Check if user exists
-                if (!userRepository.existsById(userId)) {
+                // Fetch the user
+                var user = userRepository.findById(userId);
+                if (user.isEmpty()) {
                     BulkOperationResultFailedInner failedItem = new BulkOperationResultFailedInner();
                     failedItem.setUserId(java.util.UUID.fromString(userId.toString()));
                     failedItem.setReason("User not found");
@@ -145,7 +164,7 @@ public class TeamService {
 
                 TeamMember member = TeamMember.builder()
                         .team(team)
-                        .userId(userId)
+                        .user(user.get())
                         .role(TeamRole.PLAYER)
                         .build();
                 teamMemberRepository.save(member);
@@ -167,10 +186,85 @@ public class TeamService {
         return result;
     }
 
+    public BulkOperationResult addTeamMembersByPhone(Long teamId, AddMembersByPhoneRequest request) {
+        log.info("Adding members to team {} by phone numbers", teamId);
+
+        // Validate team exists
+        Team team = teamRepository.findByIdAndIsActiveTrue(teamId)
+                .orElseThrow(() -> new TeamException(TeamError.TEAM_NOT_FOUND, "Team not found with id: " + teamId));
+
+        List<Long> successIds = new ArrayList<>();
+        List<BulkOperationResultFailedInner> failed = new ArrayList<>();
+
+        // Default role is PLAYER if not specified
+        TeamRole memberRole = request.getRole() != null
+            ? TeamRole.valueOf(request.getRole().name())
+            : TeamRole.PLAYER;
+
+        for (String phoneNumber : request.getPhoneNumbers()) {
+            try {
+                // Validate phone number format
+                if (!phoneNumber.matches("^[0-9]{10}$")) {
+                    BulkOperationResultFailedInner failedItem = new BulkOperationResultFailedInner();
+                    failedItem.setUserId(null);
+                    failedItem.setReason("Invalid phone number format: " + phoneNumber + ". Must be 10 digits.");
+                    failed.add(failedItem);
+                    continue;
+                }
+
+                // Find player profile by mobile number
+                var playerProfileOpt = playerProfileRepository.findByMobile(phoneNumber);
+                if (playerProfileOpt.isEmpty()) {
+                    BulkOperationResultFailedInner failedItem = new BulkOperationResultFailedInner();
+                    failedItem.setUserId(null);
+                    failedItem.setReason("No player profile found with phone number: " + phoneNumber);
+                    failed.add(failedItem);
+                    continue;
+                }
+
+                var playerProfile = playerProfileOpt.get();
+                Long userId = playerProfile.getUser().getId();
+
+                // Check if already a member
+                if (teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)) {
+                    BulkOperationResultFailedInner failedItem = new BulkOperationResultFailedInner();
+                    failedItem.setUserId(java.util.UUID.fromString(userId.toString()));
+                    failedItem.setReason("User with phone " + phoneNumber + " is already a team member");
+                    failed.add(failedItem);
+                    continue;
+                }
+
+                // Add member to team
+                TeamMember member = TeamMember.builder()
+                        .team(team)
+                        .user(playerProfile.getUser())
+                        .role(memberRole)
+                        .build();
+                teamMemberRepository.save(member);
+
+                successIds.add(userId);
+                log.info("Successfully added user {} (phone: {}) to team {}", userId, phoneNumber, teamId);
+
+            } catch (Exception e) {
+                log.error("Error adding user with phone {} to team {}: {}", phoneNumber, teamId, e.getMessage());
+                BulkOperationResultFailedInner failedItem = new BulkOperationResultFailedInner();
+                failedItem.setUserId(null);
+                failedItem.setReason("Error processing phone " + phoneNumber + ": " + e.getMessage());
+                failed.add(failedItem);
+            }
+        }
+
+        BulkOperationResult result = new BulkOperationResult();
+        result.setSuccessIds(successIds);
+        result.setFailed(failed);
+        return result;
+    }
+
     public void removeTeamMember(Long teamId, Long userId) {
         log.info("Removing member {} from team: {}", userId, teamId);
 
-        if (!teamRepository.existsById(teamId)) {
+        // Check if team exists and is active
+        if (!teamRepository.findByIdAndIsActiveTrue(teamId).isPresent()) {
             throw new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId);
         }
 
@@ -182,6 +276,11 @@ public class TeamService {
 
     public void changeMemberRole(Long teamId, Long userId, ChangeRoleRequest request) {
         log.info("Changing role for member {} in team: {}", userId, teamId);
+
+        // Check if team exists and is active
+        if (!teamRepository.findByIdAndIsActiveTrue(teamId).isPresent()) {
+            throw new TeamException(TeamError.TEAM_NOT_FOUND , "Team not found with id: " + teamId);
+        }
 
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
                 .orElseThrow(() -> new TeamException(TeamError.MEMBER_NOT_FOUND, "Member not found in team"));
@@ -228,8 +327,17 @@ public class TeamService {
             }
         }
         response.setIsActive(team.getIsActive());
+        response.setCreatedByUserId(team.getCreatedByUserId());
         response.setCreatedAt(team.getCreatedAt());
         response.setUpdatedAt(team.getUpdatedAt());
+
+        // Fetch and set team members
+        List<TeamMember> teamMembers = teamMemberRepository.findByTeamId(team.getId());
+        List<com.example.playmatch.api.model.TeamMember> members = teamMembers.stream()
+                .map(this::convertToApiTeamMember)
+                .collect(Collectors.toList());
+        response.setMembers(members);
+
         return response;
     }
 
@@ -254,8 +362,10 @@ public class TeamService {
         apiMember.setRole(com.example.playmatch.api.model.TeamRole.valueOf(member.getRole().name()));
         apiMember.setJoinedAt(member.getJoinedAt());
 
-        // Note: The TeamMember API model doesn't include player name field
-        // Player name would need to be fetched separately if needed by the client
+        // Set userName from the joined User entity
+        if (member.getUser() != null) {
+            apiMember.setUserName(member.getUser().getName());
+        }
 
         return apiMember;
     }

@@ -410,6 +410,23 @@
           "response": []
         },
         {
+          "name": "Add Team Members By Phone",
+          "event": [
+            {"listen":"test","script":{"type":"text/javascript","exec":[
+              "let json={}; try{json=pm.response.json();}catch(e){}",
+              "if(json.successIds && json.successIds.length>0) pm.environment.set('member_user_id', json.successIds[0]);"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{access_token}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"phoneNumbers\": [\"9876543210\", \"9876543211\"],\n  \"role\": \"PLAYER\"\n}" },
+            "url": { "raw": "{{base_url}}/api/teams/{{team_id}}/members/by-phone", "host": ["{{base_url}}"], "path": ["api","teams","{{team_id}}","members","by-phone"] },
+            "description": "Add members to a team using their phone numbers from player profiles."
+          },
+          "response": []
+        },
+        {
           "name": "Remove Team Member",
           "request": {
             "method": "DELETE",
@@ -427,6 +444,212 @@
             "body": { "mode": "raw", "raw": "{\n  \"role\": \"COORDINATOR\"\n}" },
             "url": { "raw": "{{base_url}}/api/teams/{{team_id}}/members/{{member_user_id}}/role", "host": ["{{base_url}}"], "path": ["api","teams","{{team_id}}","members","{{member_user_id}}","role"] },
             "description": "Change a member's role (ADMIN-only)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "description": "Event management endpoints for cricket events",
+      "item": [
+        {
+          "name": "Create Event",
+          "event": [
+            {"listen":"test","script":{"type":"text/javascript","exec":[
+              "let json={}; try{json=pm.response.json();}catch(e){}",
+              "if(json.id) pm.environment.set('event_id', json.id);"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sunday Practice Match - Cubbon Park\",\n  \"description\": \"Regular weekend match. Bring your own kit.\",\n  \"eventType\": \"PRACTICE_MATCH\",\n  \"eventDate\": \"2026-01-15T09:00:00+05:30\",\n  \"durationMinutes\": 180,\n  \"location\": \"Cubbon Park Cricket Ground, Gate 3\",\n  \"city\": \"Bengaluru\",\n  \"visibility\": \"PUBLIC\",\n  \"maxParticipants\": 22,\n  \"minParticipants\": 11\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] },
+            "description": "Create a new cricket event"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/events?city=Bengaluru&eventType=PRACTICE_MATCH&limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api","events"],
+              "query": [
+                {"key":"city","value":"Bengaluru"},
+                {"key":"eventType","value":"PRACTICE_MATCH"},
+                {"key":"limit","value":"10"},
+                {"key":"offset","value":"0"}
+              ]
+            },
+            "description": "Search/discover events with filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}"] },
+            "description": "Get detailed event information"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sunday Practice Match - UPDATED\",\n  \"description\": \"Updated description\",\n  \"maxParticipants\": 24\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}"] },
+            "description": "Update event details (creator only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Weather forecast shows heavy rain\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}"] },
+            "description": "Cancel event with optional reason"
+          },
+          "response": []
+        },
+        {
+          "name": "Invite Participants",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userIds\": [1, 2, 3]\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}/participants", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}","participants"] },
+            "description": "Invite participants to event (bulk)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Participants",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/participants?responseStatus=YES",
+              "host": ["{{base_url}}"],
+              "path": ["api","events","{{event_id}}","participants"],
+              "query": [{"key":"responseStatus","value":"YES"}]
+            },
+            "description": "Get list of event participants with optional status filter"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Participant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}/participants/{{user_id}}", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}","participants","{{user_id}}"] },
+            "description": "Remove participant from event"
+          },
+          "response": []
+        },
+        {
+          "name": "RSVP to Event (YES)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responseStatus\": \"YES\",\n  \"comment\": \"Looking forward to the match!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}/respond", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}","respond"] },
+            "description": "Respond to event invitation (YES/NO/TENTATIVE)"
+          },
+          "response": []
+        },
+        {
+          "name": "RSVP to Event (TENTATIVE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"responseStatus\": \"TENTATIVE\",\n  \"comment\": \"Will confirm by tomorrow\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}/respond", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}","respond"] },
+            "description": "Respond as tentative"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/api/events/{{event_id}}/summary", "host": ["{{base_url}}"], "path": ["api","events","{{event_id}}","summary"] },
+            "description": "Get event response summary with participant details"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/my-events?filter=created&limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api","events","my-events"],
+              "query": [
+                {"key":"filter","value":"created","description":"Options: created, invited, confirmed, tentative, upcoming"},
+                {"key":"limit","value":"20"},
+                {"key":"offset","value":"0"}
+              ]
+            },
+            "description": "Get current user's events (created or invited)"
           },
           "response": []
         }

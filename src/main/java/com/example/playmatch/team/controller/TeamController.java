@@ -2,6 +2,7 @@ package com.example.playmatch.team.controller;
 
 import com.example.playmatch.api.controller.TeamApi;
 import com.example.playmatch.api.model.AddMembersRequest;
+import com.example.playmatch.api.model.AddMembersByPhoneRequest;
 import com.example.playmatch.api.model.BulkOperationResult;
 import com.example.playmatch.api.model.ChangeRoleRequest;
 import com.example.playmatch.api.model.CreateTeamRequest;
@@ -31,6 +32,13 @@ public class TeamController implements TeamApi {
   public ResponseEntity<BulkOperationResult> _addTeamMembers(Long teamId, AddMembersRequest addMembersRequest) {
     log.info("Adding members to team: {}", teamId);
     BulkOperationResult result = teamService.addTeamMembers(teamId, addMembersRequest);
+    return ResponseEntity.ok(result);
+  }
+
+  @Override
+  public ResponseEntity<BulkOperationResult> _addTeamMembersByPhone(Long teamId, AddMembersByPhoneRequest addMembersByPhoneRequest) {
+    log.info("Adding members to team {} by phone numbers: {}", teamId, addMembersByPhoneRequest.getPhoneNumbers());
+    BulkOperationResult result = teamService.addTeamMembersByPhone(teamId, addMembersByPhoneRequest);
     return ResponseEntity.ok(result);
   }
 

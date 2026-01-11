@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import com.example.playmatch.team.model.enums.TeamRole;
+import com.example.playmatch.auth.model.User;
 
 @Getter
 @Setter
@@ -25,8 +26,12 @@ public class TeamMember {
     @JoinColumn(name = "team_id", nullable = false, foreignKey = @ForeignKey(name = "fk_team_member_team"))
     private Team team;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, insertable = false, updatable = false)
     private Long userId; // references app_user.id
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_team_member_user"))
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 16)
