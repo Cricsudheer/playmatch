@@ -33,7 +33,9 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://playmatch-ixe0.onrender.com"// actual frontend domain
+                "https://playmatch-ixe0.onrender.com" ,
+                "https://www.gameteam.in",
+                "https://gameteam.in"
         ));
         config.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
         config.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));

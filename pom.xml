@@ -134,6 +134,12 @@
             <version>8.7.0</version>
         </dependency>
 
+        <!-- Caffeine Cache (for rate limit bucket storage with TTL) -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
         <!-- Test (kept minimal) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
