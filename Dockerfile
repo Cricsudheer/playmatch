@@ -7,7 +7,7 @@ RUN chmod +x mvnw && ./mvnw -q -DskipTests clean package
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 ENV TZ=UTC \
-    JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseContainerSupport"
+    JAVA_OPTS="-XX:MaxRAMPercentage=65 -XX:+UseContainerSupport -XX:MaxMetaspaceSize=192m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof"
 RUN addgroup -S app && adduser -S app -G app
 USER app
 WORKDIR /app
