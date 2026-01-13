@@ -11,6 +11,7 @@ import com.example.playmatch.api.model.TeamResponse;
 import com.example.playmatch.api.model.TeamRole;
 import com.example.playmatch.api.model.TeamSearchResponse;
 import com.example.playmatch.api.model.UpdateTeamRequest;
+import com.example.playmatch.api.model.UserTeamsResponse;
 import com.example.playmatch.team.service.TeamService;
 import com.example.playmatch.auth.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
@@ -104,6 +105,14 @@ public class TeamController implements TeamApi {
     log.info("Updating team: {}", teamId);
     TeamResponse teamResponse = teamService.updateTeam(teamId, updateTeamRequest);
     return ResponseEntity.ok(teamResponse);
+  }
+
+  @Override
+  public ResponseEntity<UserTeamsResponse> _getUserTeams() {
+    log.info("Fetching all teams for current user");
+    Long userId = getCurrentUserId();
+    UserTeamsResponse response = teamService.getUserTeams(userId);
+    return ResponseEntity.ok(response);
   }
 
   private Long getCurrentUserId() {

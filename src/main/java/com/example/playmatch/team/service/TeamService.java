@@ -313,6 +313,32 @@ public class TeamService {
         return response;
     }
 
+    @Transactional(readOnly = true)
+    public UserTeamsResponse getUserTeams(Long userId) {
+        log.info("Fetching all teams for user: {}", userId);
+
+        List<TeamMember> userTeamMemberships = teamMemberRepository.findByUserId(userId);
+
+        List<UserTeamSummary> teams = userTeamMemberships.stream()
+                .map(tm -> {
+                    UserTeamSummary summary = new UserTeamSummary();
+                    summary.setTeamId(tm.getTeam().getId());
+                    summary.setTeamName(tm.getTeam().getName());
+                    summary.setRole(com.example.playmatch.api.model.TeamRole.valueOf(tm.getRole().name()));
+
+                    // Get player count for this team
+                    Long playerCount = teamMemberRepository.countByTeamId(tm.getTeam().getId());
+                    summary.setPlayerCount(playerCount);
+
+                    return summary;
+                })
+                .collect(Collectors.toList());
+
+        UserTeamsResponse response = new UserTeamsResponse();
+        response.setTeams(teams);
+        return response;
+    }
+
     private TeamResponse convertToTeamResponse(Team team) {
         TeamResponse response = new TeamResponse();
         response.setId(team.getId());
@@ -358,14 +384,17 @@ public class TeamService {
 
     private com.example.playmatch.api.model.TeamMember convertToApiTeamMember(TeamMember member) {
         com.example.playmatch.api.model.TeamMember apiMember = new com.example.playmatch.api.model.TeamMember();
-        apiMember.setUserId(member.getUserId());
+
+        // Get userId from the User entity relationship if available, otherwise from the userId field
+        if (member.getUser() != null) {
+            apiMember.setUserId(member.getUser().getId());
+            apiMember.setUserName(member.getUser().getName());
+        } else if (member.getUserId() != null) {
+            apiMember.setUserId(member.getUserId());
+        }
+
         apiMember.setRole(com.example.playmatch.api.model.TeamRole.valueOf(member.getRole().name()));
         apiMember.setJoinedAt(member.getJoinedAt());
-
-        // Set userName from the joined User entity
-        if (member.getUser() != null) {
-            apiMember.setUserName(member.getUser().getName());
-        }
 
         return apiMember;
     }

@@ -51,4 +51,16 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
      */
     void deleteByTeamId(Long teamId);
 
+    /**
+     * Find all teams that a user is a member of.
+     */
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.team WHERE tm.userId = :userId AND tm.team.isActive = true")
+    List<TeamMember> findByUserId(@Param("userId") Long userId);
+
+    /**
+     * Count members in a team.
+     */
+    @Query("SELECT COUNT(tm) FROM TeamMember tm WHERE tm.team.id = :teamId")
+    Long countByTeamId(@Param("teamId") Long teamId);
+
 }
