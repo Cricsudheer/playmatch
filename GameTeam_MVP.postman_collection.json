@@ -1,0 +1,1181 @@
+{
+	"info": {
+		"_postman_id": "gameteam-mvp-collection",
+		"name": "GameTeam MVP API",
+		"description": "Complete API collection for GameTeam MVP feature - Match Management System with OTP Authentication",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Request OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ OTP sent! Use hardcoded OTP: 123456\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phone_number}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/auth/otp/request",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"auth",
+								"otp",
+								"request"
+							]
+						},
+						"description": "Request OTP for phone number. Check console logs - OTP is hardcoded as '123456' for MVP testing."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"access_token\", jsonData.accessToken);",
+									"pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+									"pm.environment.set(\"user_id\", jsonData.userId);",
+									"",
+									"console.log(\"✅ OTP verified!\");",
+									"console.log(\"User ID: \" + jsonData.userId);",
+									"console.log(\"Phone: \" + jsonData.phoneNumber);",
+									"console.log(\"Requires Profile: \" + jsonData.requiresProfile);",
+									"",
+									"if (jsonData.requiresProfile) {",
+									"    console.log(\"⚠️  Profile incomplete - please update name and area\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phone_number}}\",\n  \"otpCode\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/auth/otp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"auth",
+								"otp",
+								"verify"
+							]
+						},
+						"description": "Verify OTP code and receive JWT tokens. Access token is automatically saved to environment."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Profile updated successfully!\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Rahul Sharma\",\n  \"area\": \"Koramangala\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Update user profile with name and area (required for new users)."
+					},
+					"response": []
+				}
+			],
+			"description": "OTP-based authentication endpoints"
+		},
+		{
+			"name": "2. Match Management",
+			"item": [
+				{
+					"name": "Create Match",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"match_id\", jsonData.matchId);",
+									"pm.environment.set(\"team_invite_url\", jsonData.teamInviteUrl);",
+									"pm.environment.set(\"emergency_invite_url\", jsonData.emergencyInviteUrl);",
+									"",
+									"// Extract invite tokens from URLs",
+									"var teamToken = jsonData.teamInviteUrl.split('/').pop();",
+									"pm.environment.set(\"team_invite_token\", teamToken);",
+									"",
+									"if (jsonData.emergencyInviteUrl) {",
+									"    var emergencyToken = jsonData.emergencyInviteUrl.split('/').pop();",
+									"    pm.environment.set(\"emergency_invite_token\", emergencyToken);",
+									"}",
+									"",
+									"console.log(\"✅ Match created successfully!\");",
+									"console.log(\"Match ID: \" + jsonData.matchId);",
+									"console.log(\"Team Invite: \" + jsonData.teamInviteUrl);",
+									"console.log(\"Emergency Invite: \" + (jsonData.emergencyInviteUrl || 'Not enabled'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"teamName\": \"Koramangala Knights\",\n  \"eventType\": \"PRACTICE\",\n  \"ballCategory\": \"LEATHER\",\n  \"ballVariant\": \"WHITE\",\n  \"groundMapsUrl\": \"https://maps.google.com/?q=@12.9352,77.6245\",\n  \"overs\": 20,\n  \"feePerPerson\": 200,\n  \"emergencyFee\": 300,\n  \"requiredPlayers\": 11,\n  \"backupSlots\": 2,\n  \"emergencyEnabled\": true,\n  \"startTime\": \"2026-02-01T15:00:00+05:30\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches"
+							]
+						},
+						"description": "Create a new match as captain. Returns team and emergency invite URLs."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Match Details (Captain View)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"console.log(\"✅ Match Details Retrieved\");",
+									"console.log(\"Team: \" + jsonData.teamName);",
+									"console.log(\"Status: \" + jsonData.status);",
+									"console.log(\"Team Count: \" + jsonData.teamCount);",
+									"console.log(\"Backup Count: \" + jsonData.backupCount);",
+									"console.log(\"Emergency Count: \" + jsonData.emergencyCount);",
+									"",
+									"if (jsonData.participants) {",
+									"    console.log(\"Participants: \" + jsonData.participants.length);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}"
+							]
+						},
+						"description": "Get match details. Captain sees full participant list, others see counts only."
+					},
+					"response": []
+				},
+				{
+					"name": "Respond YES to Match",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Successfully confirmed for match!\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"response\": \"YES\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/respond",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"respond"
+							]
+						},
+						"description": "Respond YES to match invitation. Creates participant record with auto-assigned role (TEAM/BACKUP)."
+					},
+					"response": []
+				},
+				{
+					"name": "Respond NO to Match",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Marked as unavailable for match\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"response\": \"NO\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/respond",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"respond"
+							]
+						},
+						"description": "Respond NO to match invitation. Records unavailability."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Match (Captain Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Match completed! Platform fee of ₹50 recorded.\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/complete",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"complete"
+							]
+						},
+						"description": "Mark match as completed (captain only). Records platform fee."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Match (Captain Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Match cancelled\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"cancel"
+							]
+						},
+						"description": "Cancel match (captain only)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Games",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"console.log(\"✅ My Games Retrieved\");",
+									"console.log(\"Total Matches: \" + jsonData.totalCount);",
+									"console.log(\"Upcoming: \" + jsonData.upcomingCount);",
+									"console.log(\"Completed: \" + jsonData.completedCount);",
+									"console.log(\"Cancelled: \" + jsonData.cancelledCount);",
+									"",
+									"if (jsonData.games && jsonData.games.length > 0) {",
+									"    console.log(\"\\nFirst Match:\");",
+									"    console.log(\"  Team: \" + jsonData.games[0].teamName);",
+									"    console.log(\"  Your Role: \" + jsonData.games[0].userRole);",
+									"    console.log(\"  Captain: \" + jsonData.games[0].isCaptain);",
+									"    console.log(\"  Status: \" + jsonData.games[0].status);",
+									"    console.log(\"  Team Count: \" + jsonData.games[0].teamCount + \"/\" + jsonData.games[0].requiredPlayers);",
+									"    ",
+									"    if (!jsonData.games[0].isCaptain && jsonData.games[0].paymentStatus) {",
+									"        console.log(\"  Payment: \" + jsonData.games[0].paymentStatus + \" (₹\" + jsonData.games[0].feeAmount + \")\");",
+									"    }",
+									"} else {",
+									"    console.log(\"No matches found for this user.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/my-games",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"my-games"
+							]
+						},
+						"description": "Get all matches where user is captain or participant. Returns summary with user's role, payment status, and aggregated statistics."
+					},
+					"response": []
+				}
+			],
+			"description": "Match creation, viewing, and response endpoints"
+		},
+		{
+			"name": "3. Invites",
+			"item": [
+				{
+					"name": "Resolve Team Invite (Public)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"console.log(\"✅ Invite Resolved\");",
+									"console.log(\"Match ID: \" + jsonData.matchId);",
+									"console.log(\"Invite Type: \" + jsonData.inviteType);",
+									"console.log(\"Team: \" + jsonData.teamName);",
+									"console.log(\"Start Time: \" + jsonData.startTime);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/invites/{{team_invite_token}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"invites",
+								"{{team_invite_token}}"
+							]
+						},
+						"description": "Resolve team invite by token (PUBLIC - no auth required). Returns basic match info."
+					},
+					"response": []
+				},
+				{
+					"name": "Resolve Emergency Invite (Public)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"console.log(\"✅ Emergency Invite Resolved\");",
+									"console.log(\"Match ID: \" + jsonData.matchId);",
+									"console.log(\"Invite Type: \" + jsonData.inviteType);",
+									"console.log(\"Team: \" + jsonData.teamName);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/invites/{{emergency_invite_token}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"invites",
+								"{{emergency_invite_token}}"
+							]
+						},
+						"description": "Resolve emergency invite by token (PUBLIC - no auth required)."
+					},
+					"response": []
+				}
+			],
+			"description": "Public invite resolution endpoints (no authentication required)"
+		},
+		{
+			"name": "4. Emergency Requests",
+			"item": [
+				{
+					"name": "Request Emergency Spot",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Emergency request created! Lock expires in 60 minutes.\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/emergency/request",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"emergency",
+								"request"
+							]
+						},
+						"description": "Request emergency spot in a match. Creates 60-minute soft lock."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Emergency Requests (Captain)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"console.log(\"✅ Pending emergency requests: \" + jsonData.length);",
+									"",
+									"if (jsonData.length > 0) {",
+									"    pm.environment.set(\"emergency_request_id\", jsonData[0].requestId);",
+									"    console.log(\"First request ID saved: \" + jsonData[0].requestId);",
+									"    console.log(\"User: \" + jsonData[0].userName);",
+									"    console.log(\"Area: \" + jsonData[0].area);",
+									"    console.log(\"Trust Score: \" + jsonData[0].trustScore);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/emergency/requests",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"emergency",
+								"requests"
+							]
+						},
+						"description": "Get pending emergency requests for a match (captain only)."
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Emergency Request (Captain)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Emergency request approved! User added as EMERGENCY participant.\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/emergency/{{emergency_request_id}}/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"emergency",
+								"{{emergency_request_id}}",
+								"approve"
+							]
+						},
+						"description": "Approve emergency request (captain only). Creates participant with EMERGENCY role."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Emergency Request (Captain)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Emergency request rejected\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/emergency/{{emergency_request_id}}/reject",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"emergency",
+								"{{emergency_request_id}}",
+								"reject"
+							]
+						},
+						"description": "Reject emergency request (captain only)."
+					},
+					"response": []
+				}
+			],
+			"description": "Emergency player request and approval flow"
+		},
+		{
+			"name": "5. Backout Tracking",
+			"item": [
+				{
+					"name": "Log Backout (Captain)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Backout logged successfully\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": 2,\n  \"reason\": \"GENUINE\",\n  \"notes\": \"Family emergency\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/backout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"backout"
+							]
+						},
+						"description": "Log backout with reason (captain only). Reasons: GENUINE, CONFLICT, COMMUNICATION, PAYMENT, NO_SHOW, CAPTAIN_DECISION"
+					},
+					"response": []
+				}
+			],
+			"description": "Backout tracking endpoints (captain only)"
+		},
+		{
+			"name": "6. Payment Tracking",
+			"item": [
+				{
+					"name": "Mark Payment (Captain)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Payment marked as PAID\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": 2,\n  \"paymentMode\": \"UPI\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/payments/mark",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"payments",
+								"mark"
+							]
+						},
+						"description": "Mark payment for a participant (captain only). Payment modes: CASH, UPI"
+					},
+					"response": []
+				}
+			],
+			"description": "Payment tracking endpoints (captain only)"
+		},
+		{
+			"name": "Complete User Journey",
+			"item": [
+				{
+					"name": "Setup: Create Second User",
+					"item": [
+						{
+							"name": "Request OTP (User 2)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 204\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});",
+											"console.log(\"✅ OTP sent for User 2! Use: 123456\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"phoneNumber\": \"{{phone_number_2}}\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/v2/mvp/auth/otp/request",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"v2",
+										"mvp",
+										"auth",
+										"otp",
+										"request"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Verify OTP (User 2)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"pm.environment.set(\"access_token_2\", jsonData.accessToken);",
+											"pm.environment.set(\"user_id_2\", jsonData.userId);",
+											"console.log(\"✅ User 2 authenticated!\");",
+											"console.log(\"User 2 ID: \" + jsonData.userId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"phoneNumber\": \"{{phone_number_2}}\",\n  \"otpCode\": \"123456\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/v2/mvp/auth/otp/verify",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"v2",
+										"mvp",
+										"auth",
+										"otp",
+										"verify"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Profile (User 2)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"console.log(\"✅ User 2 profile updated!\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token_2}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Virat Kumar\",\n  \"area\": \"Koramangala\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/v2/mvp/auth/profile",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"v2",
+										"mvp",
+										"auth",
+										"profile"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "Create a second user to test participant flows"
+				},
+				{
+					"name": "User 2: Respond to Match",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"✅ User 2 confirmed for match!\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token_2}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"response\": \"YES\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/respond",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"respond"
+							]
+						},
+						"description": "User 2 responds YES to match"
+					},
+					"response": []
+				},
+				{
+					"name": "Captain: Mark User 2 Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log(\"✅ Payment marked for User 2\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": {{user_id_2}},\n  \"paymentMode\": \"UPI\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v2/mvp/matches/{{match_id}}/payments/mark",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"v2",
+								"mvp",
+								"matches",
+								"{{match_id}}",
+								"payments",
+								"mark"
+							]
+						},
+						"description": "Captain marks payment for User 2"
+					},
+					"response": []
+				}
+			],
+			"description": "Full user journey testing multiple participants"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "phone_number",
+			"value": "+919876543210",
+			"type": "string"
+		},
+		{
+			"key": "phone_number_2",
+			"value": "+919876543211",
+			"type": "string"
+		}
+	]
+}

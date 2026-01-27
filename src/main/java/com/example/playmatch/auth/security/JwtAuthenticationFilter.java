@@ -1,5 +1,6 @@
 package com.example.playmatch.auth.security;
 
+import com.example.playmatch.mvp.auth.security.MvpUserPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -37,6 +39,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         "/v1/auth/reset-password",
         "/v1/auth/refresh-token",
         "/v1/health/poll",
+        "/v2/mvp/auth/otp/request",
+        "/v2/mvp/auth/otp/verify",
+        "/v2/mvp/auth/refresh-token",
+        "/v2/mvp/invites",
         "/swagger-ui",
         "/v3/api-docs",
         "/actuator",
@@ -71,19 +77,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                // Extract UserPrincipal directly from JWT claims - no database hit!
-                UserPrincipal userPrincipal = jwtService.extractUserPrincipal(jwt);
+                // Check if this is an MVP user token or regular user token
+                UserDetails principal;
+
+                if (jwtService.isMvpUserToken(jwt)) {
+                    // Extract MvpUserPrincipal from JWT claims
+                    principal = jwtService.extractMvpUserPrincipal(jwt);
+                    log.debug("Detected MVP user token");
+                } else {
+                    // Extract regular UserPrincipal from JWT claims
+                    principal = jwtService.extractUserPrincipal(jwt);
+                    log.debug("Detected regular user token");
+                }
 
                 // Validate token expiration
                 if (jwtService.isTokenValid(jwt)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userPrincipal,
+                        principal,
                         null,
-                        userPrincipal.getAuthorities()
+                        principal.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Successfully authenticated user from JWT: {}", userPrincipal.getEmail());
+                    log.debug("Successfully authenticated user from JWT: {}", principal.getUsername());
                 }
             } catch (ExpiredJwtException e) {
                 log.debug("Expired JWT encountered; proceeding unauthenticated: {}", e.getMessage());

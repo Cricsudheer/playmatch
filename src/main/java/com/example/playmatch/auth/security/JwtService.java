@@ -1,5 +1,6 @@
 package com.example.playmatch.auth.security;
 
+import com.example.playmatch.mvp.auth.security.MvpUserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -32,6 +33,8 @@ public class JwtService {
     private static final String USER_ID_CLAIM = "uid";
     private static final String ENABLED_CLAIM = "enabled";
     private static final String ACCOUNT_NON_LOCKED_CLAIM = "accountNonLocked";
+    private static final String MVP_USER_ID_CLAIM = "mvpUserId";
+    private static final String MVP_PHONE_NUMBER_CLAIM = "phoneNumber";
 
 //    TODO : REMOVE WHEN FIXED
     @PostConstruct
@@ -147,6 +150,75 @@ public class JwtService {
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    // ========== MVP USER METHODS ==========
+
+    /**
+     * Generate access token for MVP user (phone-based auth)
+     */
+    public String generateMvpAccessToken(Long userId, String phoneNumber, String name) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(MVP_USER_ID_CLAIM, userId.toString());
+        claims.put(MVP_PHONE_NUMBER_CLAIM, phoneNumber);
+        if (name != null) {
+            claims.put("name", name);
+        }
+        return buildToken(claims, phoneNumber, jwtExpiration);
+    }
+
+    /**
+     * Generate refresh token for MVP user
+     */
+    public String generateMvpRefreshToken(Long userId, String phoneNumber) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(MVP_USER_ID_CLAIM, userId.toString());
+        claims.put(MVP_PHONE_NUMBER_CLAIM, phoneNumber);
+        return buildToken(claims, phoneNumber, refreshExpiration);
+    }
+
+    /**
+     * Extract MVP user ID from token
+     */
+    public Long extractMvpUserId(String token) {
+        String userIdStr = extractClaim(token, claims -> claims.get(MVP_USER_ID_CLAIM, String.class));
+        return userIdStr != null ? Long.parseLong(userIdStr) : null;
+    }
+
+    /**
+     * Extract phone number from MVP token
+     */
+    public String extractPhoneNumber(String token) {
+        return extractClaim(token, claims -> claims.get(MVP_PHONE_NUMBER_CLAIM, String.class));
+    }
+
+    /**
+     * Check if token is an MVP user token
+     */
+    public boolean isMvpUserToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            return claims.containsKey(MVP_USER_ID_CLAIM);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Build MvpUserPrincipal directly from JWT claims
+     */
+    public MvpUserPrincipal extractMvpUserPrincipal(String token) {
+        Claims claims = extractAllClaims(token);
+
+        Long userId = Long.parseLong(claims.get(MVP_USER_ID_CLAIM, String.class));
+        String phoneNumber = claims.get(MVP_PHONE_NUMBER_CLAIM, String.class);
+        String name = claims.get("name", String.class);
+
+        return MvpUserPrincipal.builder()
+            .id(userId)
+            .phoneNumber(phoneNumber)
+            .name(name)
+            .build();
     }
 
 }
