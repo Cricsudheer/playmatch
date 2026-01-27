@@ -43,7 +43,10 @@ public class MatchResponseDto {
     private Integer backupCount;
     private Integer emergencyCount;
 
-    // Full participant list (captain-only view)
+    // Participant list visibility:
+    // - Captain: Full details (name, phone, role, status, payment info)
+    // - Confirmed participant: Limited details (name, role, status only)
+    // - Others: null (no participant list)
     private List<ParticipantDto> participants;
 
     @Data

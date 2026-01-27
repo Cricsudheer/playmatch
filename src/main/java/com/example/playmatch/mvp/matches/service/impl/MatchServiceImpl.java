@@ -100,6 +100,14 @@ public class MatchServiceImpl implements MatchService {
 
         boolean isCaptain = userId != null && match.isCaptain(userId);
 
+        // Check if user is a confirmed participant
+        boolean isConfirmedParticipant = false;
+        if (userId != null && !isCaptain) {
+            isConfirmedParticipant = participantRepository.findByMatchIdAndUserId(matchId, userId)
+                .map(p -> p.getStatus() == ParticipantStatus.CONFIRMED)
+                .orElse(false);
+        }
+
         // Count participants
         long teamCount = participantRepository.countByMatchIdAndStatusConfirmedAndRole(matchId, ParticipantRole.TEAM);
         long backupCount = participantRepository.countByMatchIdAndStatusConfirmedAndRole(matchId, ParticipantRole.BACKUP);
@@ -139,10 +147,18 @@ public class MatchServiceImpl implements MatchService {
                     .captainPhone(captain.getPhoneNumber());
             }
 
-            // Full participant list
+            // Full participant list for captain
             List<MatchParticipant> participants = participantRepository.findByMatchId(matchId);
             List<MatchResponseDto.ParticipantDto> participantDtos = participants.stream()
                 .map(this::mapParticipantToDto)
+                .collect(Collectors.toList());
+
+            responseBuilder.participants(participantDtos);
+        } else if (isConfirmedParticipant) {
+            // Limited participant list for confirmed participants (name only, no sensitive info)
+            List<MatchParticipant> participants = participantRepository.findByMatchId(matchId);
+            List<MatchResponseDto.ParticipantDto> participantDtos = participants.stream()
+                .map(this::mapParticipantToLimitedDto)
                 .collect(Collectors.toList());
 
             responseBuilder.participants(participantDtos);
@@ -392,6 +408,18 @@ public class MatchServiceImpl implements MatchService {
             .feeAmount(participant.getFeeAmount())
             .paymentStatus(participant.getPaymentStatus())
             .paymentMode(participant.getPaymentMode())
+            .build();
+    }
+
+    private MatchResponseDto.ParticipantDto mapParticipantToLimitedDto(MatchParticipant participant) {
+        MvpUser user = mvpUserRepository.findById(participant.getUserId())
+            .orElse(null);
+
+        return MatchResponseDto.ParticipantDto.builder()
+            .userId(participant.getUserId())
+            .name(user != null ? user.getName() : "Unknown")
+            .role(participant.getRole())
+            .status(participant.getStatus())
             .build();
     }
 }
