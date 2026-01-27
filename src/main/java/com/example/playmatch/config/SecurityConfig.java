@@ -38,6 +38,7 @@ public class SecurityConfig {
                     "/actuator/**",
                     "/sigma/**",
                     "/v2/mvp/auth/otp/**",
+                    "/v2/mvp/auth/refresh-token",
                     "/v2/mvp/invites/**"
                 ).permitAll()
                 .anyRequest().authenticated()
