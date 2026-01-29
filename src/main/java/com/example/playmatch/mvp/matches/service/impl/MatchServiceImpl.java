@@ -99,19 +99,27 @@ public class MatchServiceImpl implements MatchService {
             .orElseThrow(() -> new MvpException(MvpError.MATCH_NOT_FOUND));
 
         boolean isCaptain = userId != null && match.isCaptain(userId);
+        List<MatchParticipant> participants = participantRepository.findByMatchId(match.getId());
+
+        log.info("Fetched match {} for user {}: isCaptain={}, participants={}",
+            matchId, userId, isCaptain, participants.size());
 
         // Check if user is a confirmed participant
         boolean isConfirmedParticipant = false;
         if (userId != null && !isCaptain) {
-            isConfirmedParticipant = participantRepository.findByMatchIdAndUserId(matchId, userId)
-                .map(p -> p.getStatus() == ParticipantStatus.CONFIRMED)
-                .orElse(false);
+            isConfirmedParticipant = participants.stream().anyMatch(p ->
+                p.getUserId().equals(userId) && p.getStatus() == ParticipantStatus.CONFIRMED);
         }
 
-        // Count participants
-        long teamCount = participantRepository.countByMatchIdAndStatusConfirmedAndRole(matchId, ParticipantRole.TEAM);
-        long backupCount = participantRepository.countByMatchIdAndStatusConfirmedAndRole(matchId, ParticipantRole.BACKUP);
-        long emergencyCount = participantRepository.countByMatchIdAndStatusConfirmedAndRole(matchId, ParticipantRole.EMERGENCY);
+      long teamCount = participants.stream()
+    .filter(p -> p.getRole() == ParticipantRole.TEAM && p.getStatus() == ParticipantStatus.CONFIRMED)
+    .count();
+long backupCount = participants.stream()
+    .filter(p -> p.getRole() == ParticipantRole.BACKUP && p.getStatus() == ParticipantStatus.CONFIRMED)
+    .count();
+long emergencyCount = participants.stream()
+    .filter(p -> p.getRole() == ParticipantRole.EMERGENCY && p.getStatus() == ParticipantStatus.CONFIRMED)
+    .count();
 
         MatchResponseDto.MatchResponseDtoBuilder responseBuilder = MatchResponseDto.builder()
             .matchId(match.getId())
@@ -146,9 +154,7 @@ public class MatchServiceImpl implements MatchService {
                     .captainName(captain.getName())
                     .captainPhone(captain.getPhoneNumber());
             }
-
             // Full participant list for captain
-            List<MatchParticipant> participants = participantRepository.findByMatchId(matchId);
             List<MatchResponseDto.ParticipantDto> participantDtos = participants.stream()
                 .map(this::mapParticipantToDto)
                 .collect(Collectors.toList());
@@ -156,14 +162,14 @@ public class MatchServiceImpl implements MatchService {
             responseBuilder.participants(participantDtos);
         } else if (isConfirmedParticipant) {
             // Limited participant list for confirmed participants (name only, no sensitive info)
-            List<MatchParticipant> participants = participantRepository.findByMatchId(matchId);
             List<MatchResponseDto.ParticipantDto> participantDtos = participants.stream()
                 .map(this::mapParticipantToLimitedDto)
                 .collect(Collectors.toList());
 
             responseBuilder.participants(participantDtos);
         }
-
+        log.info("Match {} response built for user {}: isCaptain={}, isConfirmedParticipant={}",
+            matchId, userId, isCaptain, isConfirmedParticipant);
         return responseBuilder.build();
     }
 

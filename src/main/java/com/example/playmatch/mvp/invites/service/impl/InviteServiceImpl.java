@@ -36,7 +36,7 @@ public class InviteServiceImpl implements InviteService {
             .inviteToken(token)
             .matchId(matchId)
             .type(inviteType)
-            .expiresAt(null) // No expiry for MVP
+            .expiresAt(null)
             .build();
 
         MatchInvite saved = matchInviteRepository.save(invite);
